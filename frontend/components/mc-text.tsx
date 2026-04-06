@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { parseTextToHTML } from "@/lib/formatting-codes/text";
 import { enableObfuscate } from "@/lib/formatting-codes/obfuscate";
 import { cn } from "@/lib/utils";
-import { minecraftAE, minecraftAEOld, unifont } from "@/lib/fonts";
+import { minecraftAE, minecraftAEOld } from "@/lib/fonts";
 
 export function MinecraftText({
   maxLines = 1,
@@ -27,7 +27,7 @@ export function MinecraftText({
 
   return (
     <div
-      className={cn("[&_*]:leading-0.5", className, minecraftAE.className, unifont.className, minecraftAEOld.variable)}
+      className={cn("[&_*]:leading-0.5", className, minecraftAE.className, minecraftAEOld.variable)}
       ref={containerRef}/>
   );
 }
