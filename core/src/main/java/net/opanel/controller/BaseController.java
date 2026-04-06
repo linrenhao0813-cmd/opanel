@@ -95,4 +95,40 @@ public abstract class BaseController {
     public static void unregisterAllControllerInstances() {
         instances.clear();
     }
+
+    public String getClientIp(Context ctx) {
+        boolean enable = plugin.getConfig().proxyHeaders;
+        if(enable) {
+            String ip = getIpFromHeader(ctx, "X-Forwarded-For");
+            if(ip != null) return ip;
+
+            ip = getIpFromHeader(ctx, "X-Real-IP");
+            if(ip != null) return ip;
+        }
+        return ctx.ip();
+    }
+
+    private static String getIpFromHeader(Context ctx, String headerName) {
+        String ip = ctx.header(headerName);
+        if(ip != null && !ip.isEmpty()) {
+            if("X-Forwarded-For".equalsIgnoreCase(headerName)) {
+                String[] ips = ip.split(",");
+                for(String part : ips) {
+                    String trimmed = part.trim();
+                    if(!trimmed.isEmpty() && !"unknown".equalsIgnoreCase(trimmed) && !"null".equalsIgnoreCase(trimmed) && !"-".equals(trimmed)) {
+                        return trimmed;
+                    }
+                }
+                return null;
+            }
+            ip = ip.trim();
+            if(ip.isEmpty()) {
+                return null;
+            }
+            if(!"unknown".equalsIgnoreCase(ip) && !"null".equalsIgnoreCase(ip) && !"-".equals(ip)) {
+                return ip;
+            }
+        }
+        return null;
+    }
 }

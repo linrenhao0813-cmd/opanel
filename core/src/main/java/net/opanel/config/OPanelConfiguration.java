@@ -6,6 +6,7 @@ public class OPanelConfiguration {
             "", // to be generated on the initial launch
             "", // to be generated on the initial launch
             3000,
+            false,
             false
     );
 
@@ -13,16 +14,19 @@ public class OPanelConfiguration {
     public String salt;
     public int webServerPort;
     public boolean cookieSecure;
+    public boolean proxyHeaders;
 
     public OPanelConfiguration(
             String accessKey,
             String salt,
             int webServerPort,
-            boolean cookieSecure
-    ) {
+            boolean cookieSecure,
+            boolean proxyHeaders
+                              ) {
         this.accessKey = accessKey;
         this.salt = salt;
         this.webServerPort = webServerPort;
         this.cookieSecure = cookieSecure;
+        this.proxyHeaders = proxyHeaders;
     }
 }
