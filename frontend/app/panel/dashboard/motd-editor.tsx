@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { sendPostRequest, toastError } from "@/lib/api";
-import { purify, transformText } from "@/lib/formatting-codes/text";
+import { purify } from "@/lib/formatting-codes/text";
 import { emitter } from "@/lib/emitter";
 import { stringToBase64 } from "@/lib/utils";
 import { $ } from "@/lib/i18n";
@@ -52,7 +52,7 @@ export function MotdEditor({
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      await sendPostRequest("/api/info/motd", transformText(stringToBase64(values.motd)));
+      await sendPostRequest("/api/info/motd", stringToBase64(values.motd));
       emitter.emit("refresh-data");
       setDialogOpen(false);
     } catch (e: any) {

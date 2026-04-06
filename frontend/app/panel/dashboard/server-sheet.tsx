@@ -22,7 +22,6 @@ import {
   type ServerProperties
 } from "@/lib/server-config";
 import { sendGetRequest, sendPostRequest, toastError } from "@/lib/api";
-import { transformText } from "@/lib/formatting-codes/text";
 import { base64ToString, isNumeric, objectToMap, stringToBase64 } from "@/lib/utils";
 import { Form, FormField, FormMessage } from "@/components/ui/form";
 import {
@@ -93,7 +92,7 @@ export function ServerSheet({
     }
 
     try {
-      await sendPostRequest(`/api/control/properties`, transformText(stringToBase64(rawProperties)));
+      await sendPostRequest(`/api/control/properties`, stringToBase64(rawProperties));
       toast.success($("dashboard.properties.save.success"));
       setChanged(false);
       setProperties({});

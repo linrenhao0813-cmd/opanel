@@ -33,10 +33,13 @@ export function purify(text: string): string {
   return text.replaceAll("\u00c2", "");
 }
 
-/** @see https://minecraft.fandom.com/wiki/Formatting_codes Compatibility with older versions */
-export function transformText(text: string): string {
-  return text.replaceAll("§", "\u00c2\u00a7");
-}
+/**
+ * @see https://minecraft.fandom.com/wiki/Formatting_codes Compatibility with older versions
+ * @deprecated
+ */
+// export function transformText(text: string): string {
+//   return text.replaceAll("§", "\u00c2\u00a7");
+// }
 
 // function convert(text: string): string {
 //   return text.replaceAll("&", secSign);
