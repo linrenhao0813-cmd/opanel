@@ -75,25 +75,30 @@ export const enabledPluginColumns: ColumnDef<Plugin>[] = [
   {
     header: " ",
     cell: ({ row }) => {
-      const { fileName: rawFileName, loaded } = row.original;
+      const { fileName: rawFileName } = row.original;
       const fileName = base64ToString(rawFileName);
       return (
         <div className="flex justify-end [&>*]:h-4 [&>*]:cursor-pointer [&>*]:hover:!bg-transparent">
-          {!loaded && (
-            <Button
-              variant="ghost"
-              size="icon"
-              title={$("plugins.action.toggle.disable")}
-              onClick={() => togglePlugin(fileName, false)}>
-              <Ban className="stroke-red-400"/>
-            </Button>
-          )}
           <Button
             variant="ghost"
             size="icon"
-            title={$ ("plugins.action.download")}
+            title={$("plugins.action.toggle.disable")}
+            onClick={() => togglePlugin(fileName, false)}>
+            <Ban className="stroke-red-400"/>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            title={$("plugins.action.download")}
             onClick={() => downloadPlugin(fileName)}>
             <Download />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            title={$("plugins.action.delete")}
+            onClick={() => deletePlugin(fileName)}>
+            <Trash2 />
           </Button>
         </div>
       );
@@ -113,15 +118,6 @@ export const disabledPluginColumns: ColumnDef<Plugin>[] = [
         <TooltipContent>{base64ToString(row.original.fileName)}</TooltipContent>
       </Tooltip>
     )
-  },
-  {
-    accessorKey: "version",
-    header: $("plugins.columns.version"),
-    cell: ({ row }) => row.original.version ?? ""
-  },
-  {
-    accessorKey: "description",
-    header: $("plugins.columns.description"),
   },
   {
     accessorKey: "size",

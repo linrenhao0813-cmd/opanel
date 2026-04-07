@@ -223,18 +223,13 @@ public abstract class BaseBukkitServer implements OPanelServer {
             Path newPath = pluginsPath.resolve(fileName.replaceAll("\\"+ OPanelPlugin.DISABLED_SUFFIX +"$", ""));
             Files.move(originalPath, newPath);
         } else if(!isActuallyDisabled && !enabled) {
-            for(Plugin p : server.getPluginManager().getPlugins()) {
-                String itemName = URLDecoder.decode(p.getClass().getProtectionDomain().getCodeSource().getLocation().getPath(), StandardCharsets.UTF_8);
-                // Extract just the filename
-                itemName = itemName.substring(itemName.lastIndexOf('/') + 1);
-                if(fileName.equals(itemName)) {
-                    throw new IllegalStateException("Cannot disable a loaded plugin.");
-                }
-            }
-
             // Rename from .jar to .jar.disabled
             Path newPath = pluginsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
-            Files.move(originalPath, newPath);
+            try {
+                Files.move(originalPath, newPath);
+            } catch (Exception e) {
+                throw new IllegalStateException("Cannot disable a loaded plugin.");
+            }
         }
     }
 
@@ -252,7 +247,11 @@ public abstract class BaseBukkitServer implements OPanelServer {
             throw new NoSuchFileException("Plugin file not found: " + fileName);
         }
         
-        Files.delete(filePath);
+        try {
+            Files.delete(filePath);
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot delete a loaded plugin.");
+        }
     }
 }
 

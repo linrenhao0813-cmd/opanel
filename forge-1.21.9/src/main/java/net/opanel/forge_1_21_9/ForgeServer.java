@@ -321,31 +321,4 @@ public class ForgeServer extends BaseForgeServer implements OPanelServer, CodeOf
 
         return mods;
     }
-
-    @Override
-    public void togglePlugin(String fileName, boolean enabled) throws IOException {
-        Path pluginsPath = getPluginsPath();
-        Path originalPath = pluginsPath.resolve(fileName);
-        if(!Files.exists(originalPath)) {
-            throw new NoSuchFileException("Mod file not found: " + fileName);
-        }
-
-        final boolean isActuallyDisabled = fileName.endsWith(OPanelPlugin.DISABLED_SUFFIX);
-
-        if(isActuallyDisabled && enabled) {
-            // Rename from .jar.disabled to .jar
-            Path newPath = pluginsPath.resolve(fileName.replaceAll("\\"+ OPanelPlugin.DISABLED_SUFFIX +"$", ""));
-            Files.move(originalPath, newPath);
-        } else if(!isActuallyDisabled && !enabled) {
-            for(IModInfo modInfo : ModList.get().getMods()) {
-                if(fileName.equals(modInfo.getOwningFile().getFile().getFileName())) {
-                    throw new IllegalStateException("Cannot disable a loaded mod.");
-                }
-            }
-
-            // Rename from .jar to .jar.disabled
-            Path newPath = pluginsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
-            Files.move(originalPath, newPath);
-        }
-    }
 }

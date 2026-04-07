@@ -43,6 +43,7 @@ dependencies {
     implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}+${minecraft_version}"
     include(implementation("space.nocp:configx:2.0.3"))
+    shadowImplementation "com.cozooo.dlc_manager:dlc-fileops-helper:1.0.0"
 
     shadowImplementation(project(":core")) {
         // To avoid conflict

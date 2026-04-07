@@ -1,5 +1,6 @@
 package net.opanel.fabric_helper_unmapped;
 
+import com.cozooo.dlc_fileops_helper.api.FileOpsHelperApi;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.tree.CommandNode;
 import net.fabricmc.loader.api.FabricLoader;
@@ -15,6 +16,7 @@ import net.opanel.common.OPanelPlayer;
 import net.opanel.common.OPanelPlugin;
 import net.opanel.common.OPanelServer;
 import net.opanel.common.ServerType;
+import net.opanel.exception.ActLaterException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -249,9 +251,9 @@ public abstract class BaseFabricServer implements OPanelServer {
     }
 
     @Override
-    public void togglePlugin(String fileName, boolean enabled) throws IOException {
-        Path pluginsPath = getPluginsPath();
-        Path originalPath = pluginsPath.resolve(fileName);
+    public void togglePlugin(String fileName, boolean enabled) throws IOException, ActLaterException {
+        Path modsPath = getPluginsPath();
+        Path originalPath = modsPath.resolve(fileName);
         if(!Files.exists(originalPath)) {
             throw new NoSuchFileException("Mod file not found: " + fileName);
         }
@@ -260,38 +262,49 @@ public abstract class BaseFabricServer implements OPanelServer {
 
         if(isActuallyDisabled && enabled) {
             // Rename from .jar.disabled to .jar
-            Path newPath = pluginsPath.resolve(fileName.replaceAll("\\"+ OPanelPlugin.DISABLED_SUFFIX +"$", ""));
-            Files.move(originalPath, newPath);
-        } else if(!isActuallyDisabled && !enabled) {
-            for(ModContainer modContainer : FabricLoader.getInstance().getAllMods()) {
-                ModOrigin origin = modContainer.getOrigin();
-                if(origin.getKind() == ModOrigin.Kind.NESTED) continue;
-                if(fileName.equals(origin.getPaths().get(0).getFileName().toString())) {
-                    throw new IllegalStateException("Cannot disable a loaded mod.");
-                }
+            Path newPath = modsPath.resolve(fileName.replaceAll("\\"+ OPanelPlugin.DISABLED_SUFFIX +"$", ""));
+            try {
+                Files.move(originalPath, newPath);
+            } catch (Exception e) {
+                FileOpsHelperApi.scheduleMove(originalPath.toString(), newPath.toString(), true);
+                throw new ActLaterException();
             }
-
+        } else if(!isActuallyDisabled && !enabled) {
             // Rename from .jar to .jar.disabled
-            Path newPath = pluginsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
-            Files.move(originalPath, newPath);
+            Path newPath = modsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
+            try {
+                Files.move(originalPath, newPath);
+            } catch (Exception e) {
+                FileOpsHelperApi.scheduleMove(originalPath.toString(), newPath.toString(), true);
+                throw new ActLaterException();
+            }
+        } else if(!isActuallyDisabled) {
+            // Cancel the pending operation of renaming from .jar to .jar.disabled
+            Path targetPath = modsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
+            FileOpsHelperApi.cancelPendingOperationsByTarget(List.of(targetPath.toAbsolutePath().toString()));
+            throw new ActLaterException();
         }
     }
 
     @Override
-    public void deletePlugin(String fileName) throws IOException {
+    public void deletePlugin(String fileName) throws IOException, ActLaterException {
         Path modsPath = getPluginsPath();
         Path filePath = modsPath.resolve(fileName);
-        
+
         if(!Files.exists(filePath)) {
             // Try with .disabled suffix
             filePath = modsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
         }
-        
+
         if(!Files.exists(filePath)) {
             throw new NoSuchFileException("Mod file not found: " + fileName);
         }
-        
-        Files.delete(filePath);
+
+        try {
+            Files.delete(filePath);
+        } catch (Exception e) {
+            FileOpsHelperApi.scheduleDelete(List.of(filePath.toString()));
+            throw new ActLaterException();
+        }
     }
 }
-

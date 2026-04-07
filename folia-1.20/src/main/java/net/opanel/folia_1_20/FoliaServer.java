@@ -1,22 +1,21 @@
 package net.opanel.folia_1_20;
 
+import com.cozooo.dlc_fileops_helper.api.FileOpsHelperApi;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.tree.CommandNode;
 import net.opanel.annotation.Rewrite;
 import net.opanel.bukkit_helper.BaseBukkitServer;
 import net.opanel.bukkit_helper.utils.BukkitUtils;
-import net.opanel.common.ServerType;
-import net.opanel.common.OPanelPlayer;
-import net.opanel.common.OPanelSave;
-import net.opanel.common.OPanelServer;
-import net.opanel.common.OPanelWhitelist;
+import net.opanel.common.*;
 import net.opanel.common.features.BukkitConfigFeature;
+import net.opanel.exception.ActLaterException;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -215,5 +214,65 @@ public class FoliaServer extends BaseBukkitServer implements OPanelServer, Bukki
     @Override
     public void reload() {
         throw new UnsupportedOperationException("Folia doesn't support reload operation");
+    }
+
+    @Rewrite
+    @Override
+    public void togglePlugin(String fileName, boolean enabled) throws IOException, ActLaterException {
+        Path pluginsPath = getPluginsPath();
+        Path originalPath = pluginsPath.resolve(fileName);
+        if(!Files.exists(originalPath)) {
+            throw new NoSuchFileException("Plugin file not found: " + fileName);
+        }
+
+        final boolean isActuallyDisabled = fileName.endsWith(OPanelPlugin.DISABLED_SUFFIX);
+
+        if(isActuallyDisabled && enabled) {
+            // Rename from .jar.disabled to .jar
+            Path newPath = pluginsPath.resolve(fileName.replaceAll("\\"+ OPanelPlugin.DISABLED_SUFFIX +"$", ""));
+            try {
+                Files.move(originalPath, newPath);
+            } catch (Exception e) {
+                FileOpsHelperApi.scheduleMove(originalPath.toString(), newPath.toString(), true);
+                throw new ActLaterException();
+            }
+        } else if(!isActuallyDisabled && !enabled) {
+            // Rename from .jar to .jar.disabled
+            Path newPath = pluginsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
+            try {
+                Files.move(originalPath, newPath);
+            } catch (Exception e) {
+                FileOpsHelperApi.scheduleMove(originalPath.toString(), newPath.toString(), true);
+                throw new ActLaterException();
+            }
+        } else if(!isActuallyDisabled) {
+            // Cancel the pending operation of renaming from .jar to .jar.disabled
+            Path targetPath = pluginsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
+            FileOpsHelperApi.cancelPendingOperationsByTarget(List.of(targetPath.toAbsolutePath().toString()));
+            throw new ActLaterException();
+        }
+    }
+
+    @Rewrite
+    @Override
+    public void deletePlugin(String fileName) throws IOException, ActLaterException {
+        Path pluginsPath = getPluginsPath();
+        Path filePath = pluginsPath.resolve(fileName);
+
+        if(!Files.exists(filePath)) {
+            // Try with .disabled suffix
+            filePath = pluginsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
+        }
+
+        if(!Files.exists(filePath)) {
+            throw new NoSuchFileException("Plugin file not found: " + fileName);
+        }
+
+        try {
+            Files.delete(filePath);
+        } catch (Exception e) {
+            FileOpsHelperApi.scheduleDelete(List.of(filePath.toString()));
+            throw new ActLaterException();
+        }
     }
 }

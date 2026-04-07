@@ -1,5 +1,6 @@
 package net.opanel.neoforge_1_21_1;
 
+import com.cozooo.dlc_fileops_helper.api.FileOpsHelperApi;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.tree.CommandNode;
 import net.minecraft.commands.CommandSourceStack;
@@ -21,6 +22,7 @@ import net.opanel.common.OPanelPlugin;
 import net.opanel.common.OPanelSave;
 import net.opanel.common.OPanelServer;
 import net.opanel.common.OPanelWhitelist;
+import net.opanel.exception.ActLaterException;
 import net.opanel.utils.Utils;
 
 import java.io.IOException;
@@ -447,9 +449,9 @@ public class NeoServer implements OPanelServer {
     }
 
     @Override
-    public void togglePlugin(String fileName, boolean enabled) throws IOException {
-        Path pluginsPath = getPluginsPath();
-        Path originalPath = pluginsPath.resolve(fileName);
+    public void togglePlugin(String fileName, boolean enabled) throws IOException, ActLaterException {
+        Path modsPath = getPluginsPath();
+        Path originalPath = modsPath.resolve(fileName);
         if(!Files.exists(originalPath)) {
             throw new NoSuchFileException("Mod file not found: " + fileName);
         }
@@ -458,23 +460,32 @@ public class NeoServer implements OPanelServer {
 
         if(isActuallyDisabled && enabled) {
             // Rename from .jar.disabled to .jar
-            Path newPath = pluginsPath.resolve(fileName.replaceAll("\\"+ OPanelPlugin.DISABLED_SUFFIX +"$", ""));
-            Files.move(originalPath, newPath);
-        } else if(!isActuallyDisabled && !enabled) {
-            for(IModInfo modInfo : ModList.get().getMods()) {
-                if(fileName.equals(modInfo.getOwningFile().getFile().getFileName())) {
-                    throw new IllegalStateException("Cannot disable a loaded mod.");
-                }
+            Path newPath = modsPath.resolve(fileName.replaceAll("\\"+ OPanelPlugin.DISABLED_SUFFIX +"$", ""));
+            try {
+                Files.move(originalPath, newPath);
+            } catch (Exception e) {
+                FileOpsHelperApi.scheduleMove(originalPath.toString(), newPath.toString(), true);
+                throw new ActLaterException();
             }
-
+        } else if(!isActuallyDisabled && !enabled) {
             // Rename from .jar to .jar.disabled
-            Path newPath = pluginsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
-            Files.move(originalPath, newPath);
+            Path newPath = modsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
+            try {
+                Files.move(originalPath, newPath);
+            } catch (Exception e) {
+                FileOpsHelperApi.scheduleMove(originalPath.toString(), newPath.toString(), true);
+                throw new ActLaterException();
+            }
+        } else if(!isActuallyDisabled) {
+            // Cancel the pending operation of renaming from .jar to .jar.disabled
+            Path targetPath = modsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
+            FileOpsHelperApi.cancelPendingOperationsByTarget(List.of(targetPath.toAbsolutePath().toString()));
+            throw new ActLaterException();
         }
     }
 
     @Override
-    public void deletePlugin(String fileName) throws IOException {
+    public void deletePlugin(String fileName) throws IOException, ActLaterException {
         Path modsPath = getPluginsPath();
         Path filePath = modsPath.resolve(fileName);
 
@@ -487,7 +498,12 @@ public class NeoServer implements OPanelServer {
             throw new NoSuchFileException("Mod file not found: " + fileName);
         }
 
-        Files.delete(filePath);
+        try {
+            Files.delete(filePath);
+        } catch (Exception e) {
+            FileOpsHelperApi.scheduleDelete(List.of(filePath.toString()));
+            throw new ActLaterException();
+        }
     }
 }
 

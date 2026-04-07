@@ -1,5 +1,6 @@
 package net.opanel.folia_1_21_11;
 
+import com.cozooo.dlc_fileops_helper.FileOpsHelperBootstrap;
 import de.tr7zw.changeme.nbtapi.NBT;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.opanel.OPanel;
@@ -17,6 +18,7 @@ import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Paths;
 import java.util.logging.Logger;
 
 public class Main extends JavaPlugin implements Listener, TaskRunner {
@@ -34,6 +36,7 @@ public class Main extends JavaPlugin implements Listener, TaskRunner {
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
+        FileOpsHelperBootstrap.initialize(Paths.get(""), OPanel.TMP_DIR_PATH);
 
         final LoggerImpl logger = new LoggerImpl(LOGGER);
 

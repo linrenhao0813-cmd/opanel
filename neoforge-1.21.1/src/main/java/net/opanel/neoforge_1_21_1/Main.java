@@ -1,5 +1,6 @@
 package net.opanel.neoforge_1_21_1;
 
+import com.cozooo.dlc_fileops_helper.FileOpsHelperBootstrap;
 import com.mojang.logging.LogUtils;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -20,6 +21,8 @@ import net.opanel.neoforge_1_21_1.terminal.LogListenerManagerImpl;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 
+import java.nio.file.Paths;
+
 @Mod(value = Main.MODID, dist = Dist.DEDICATED_SERVER)
 public class Main {
     public static final String MODID = "opanel";
@@ -29,6 +32,8 @@ public class Main {
     private LogListenerManagerImpl logListenerAppender;
 
     public Main(IEventBus modEventBus, ModContainer modContainer) {
+        FileOpsHelperBootstrap.initialize(Paths.get(""), OPanel.TMP_DIR_PATH);
+
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         NeoForge.EVENT_BUS.register(this);
         NeoForge.EVENT_BUS.register(new NeoListener());

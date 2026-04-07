@@ -1,5 +1,6 @@
 package net.opanel.fabric_1_20;
 
+import com.cozooo.dlc_fileops_helper.FileOpsHelperBootstrap;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -15,6 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import space.nocp.configx.api.*;
 
+import java.nio.file.Paths;
+
 public class Main implements DedicatedServerModInitializer {
     public static final String MODID = "opanel";
     public static final Logger LOGGER = LoggerFactory.getLogger(MODID);
@@ -24,6 +27,8 @@ public class Main implements DedicatedServerModInitializer {
 
     @Override
     public void onInitializeServer() {
+        FileOpsHelperBootstrap.initialize(Paths.get(""), OPanel.TMP_DIR_PATH);
+
         Configuration<OPanelConfiguration> configSrc = ConfigManager.get().register(MODID, OPanelConfiguration.defaultConfig, OPanelConfiguration.class);
         instance = new OPanel(new ConfigManagerImpl(configSrc), new LoggerImpl(LOGGER));
 

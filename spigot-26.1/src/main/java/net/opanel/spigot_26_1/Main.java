@@ -1,5 +1,7 @@
 package net.opanel.spigot_26_1;
 
+import com.cozooo.dlc_fileops_helper.FileOpsHelperBootstrap;
+import com.cozooo.dlc_fileops_helper.api.FileOpsHelperApi;
 import de.tr7zw.changeme.nbtapi.NBT;
 import net.opanel.OPanel;
 import net.opanel.bukkit_helper.TaskRunner;
@@ -17,6 +19,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Paths;
 import java.util.logging.Logger;
 
 public class Main extends JavaPlugin implements Listener, TaskRunner {
@@ -36,6 +39,7 @@ public class Main extends JavaPlugin implements Listener, TaskRunner {
 //            return;
 //        }
         NBT.preloadApi();
+        FileOpsHelperBootstrap.initialize(Paths.get(""), OPanel.TMP_DIR_PATH);
 
         final LoggerImpl logger = new LoggerImpl(LOGGER);
 

@@ -1,5 +1,6 @@
 package net.opanel.forge_1_19_4;
 
+import com.cozooo.dlc_fileops_helper.FileOpsHelperBootstrap;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -20,6 +21,8 @@ import net.opanel.forge_helper.config.ConfigManagerImpl;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 
+import java.nio.file.Paths;
+
 @Mod(Main.MODID)
 @OnlyIn(Dist.DEDICATED_SERVER)
 public class Main {
@@ -30,6 +33,8 @@ public class Main {
     private LogListenerManagerImpl logListenerAppender;
 
     public Main(FMLJavaModLoadingContext ctx) {
+        FileOpsHelperBootstrap.initialize(Paths.get(""), OPanel.TMP_DIR_PATH);
+
         ctx.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new ForgeListener());

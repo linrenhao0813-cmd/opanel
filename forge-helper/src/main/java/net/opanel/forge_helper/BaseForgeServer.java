@@ -1,30 +1,26 @@
 package net.opanel.forge_helper;
 
+import com.cozooo.dlc_fileops_helper.api.FileOpsHelperApi;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.tree.CommandNode;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.forgespi.language.IModInfo;
-import net.minecraftforge.forgespi.locating.IModFile;
 import net.opanel.common.OPanelPlayer;
 import net.opanel.common.OPanelPlugin;
 import net.opanel.common.OPanelServer;
 import net.opanel.common.ServerType;
+import net.opanel.exception.ActLaterException;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Matcher;
-import java.util.stream.Stream;
 
 public abstract class BaseForgeServer implements OPanelServer {
     protected final MinecraftServer server;
@@ -145,20 +141,61 @@ public abstract class BaseForgeServer implements OPanelServer {
     }
 
     @Override
-    public void deletePlugin(String fileName) throws IOException {
+    public void togglePlugin(String fileName, boolean enabled) throws IOException, ActLaterException {
+        Path modsPath = getPluginsPath();
+        Path originalPath = modsPath.resolve(fileName);
+        if(!Files.exists(originalPath)) {
+            throw new NoSuchFileException("Mod file not found: " + fileName);
+        }
+
+        final boolean isActuallyDisabled = fileName.endsWith(OPanelPlugin.DISABLED_SUFFIX);
+
+        if(isActuallyDisabled && enabled) {
+            // Rename from .jar.disabled to .jar
+            Path newPath = modsPath.resolve(fileName.replaceAll("\\"+ OPanelPlugin.DISABLED_SUFFIX +"$", ""));
+            try {
+                Files.move(originalPath, newPath);
+            } catch (Exception e) {
+                FileOpsHelperApi.scheduleMove(originalPath.toString(), newPath.toString(), true);
+                throw new ActLaterException();
+            }
+        } else if(!isActuallyDisabled && !enabled) {
+            // Rename from .jar to .jar.disabled
+            Path newPath = modsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
+            try {
+                Files.move(originalPath, newPath);
+            } catch (Exception e) {
+                FileOpsHelperApi.scheduleMove(originalPath.toString(), newPath.toString(), true);
+                throw new ActLaterException();
+            }
+        } else if(!isActuallyDisabled) {
+            // Cancel the pending operation of renaming from .jar to .jar.disabled
+            Path targetPath = modsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
+            FileOpsHelperApi.cancelPendingOperationsByTarget(List.of(targetPath.toAbsolutePath().toString()));
+            throw new ActLaterException();
+        }
+    }
+
+    @Override
+    public void deletePlugin(String fileName) throws IOException, ActLaterException {
         Path modsPath = getPluginsPath();
         Path filePath = modsPath.resolve(fileName);
-        
+
         if(!Files.exists(filePath)) {
             // Try with .disabled suffix
             filePath = modsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
         }
-        
+
         if(!Files.exists(filePath)) {
             throw new NoSuchFileException("Mod file not found: " + fileName);
         }
-        
-        Files.delete(filePath);
+
+        try {
+            Files.delete(filePath);
+        } catch (Exception e) {
+            FileOpsHelperApi.scheduleDelete(List.of(filePath.toString()));
+            throw new ActLaterException();
+        }
     }
 }
 
