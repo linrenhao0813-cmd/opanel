@@ -25,11 +25,7 @@ function AutocompleteItem({
   selected: boolean
   index: number
 }) {
-  const { argValue, prefix, setSelected, complete } = useContext(InputContext);
-  const hasPrefix = prefix && argValue.startsWith(prefix);
-
-  // Pure argValue is argValue that has been removed the prefix if it has prefix
-  const pureArgValue = hasPrefix ? argValue.substring(prefix.length) : argValue;
+  const { setSelected, complete } = useContext(InputContext);
 
   return (
     <Button
@@ -42,8 +38,7 @@ function AutocompleteItem({
       data-selected={selected}
       onClick={() => setSelected(index)}
       onDoubleClick={() => complete()}>
-      <span className="font-bold">{pureArgValue}</span>
-      <span>{name.replace(pureArgValue, "")}</span>
+      {name}
     </Button>
   );
 }
@@ -69,12 +64,13 @@ export function AutocompleteInput({
   const [advisedList, setAdvisedList] = useState<string[]>([]);
   const [selected, setSelected] = useState<number | null>(null); // index
   const [positionReady, setPositionReady] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const inputGroupRef = useRef<HTMLDivElement | null>(null);
   const prevItemList = usePrevious(itemList);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const isInvisible = value.length === 0 || advisedList.length === 0;
 
-  // Do tab complete
+  /** Do tab complete */
   const complete = async () => {
     if(!inputRef.current) return 0;
 
@@ -224,6 +220,8 @@ export function AutocompleteInput({
             setValue((e.target as HTMLInputElement).value);
             if(onInput) onInput(e);
           }}
+          onFocus={() => setInputFocused(true)}
+          onBlur={() => setInputFocused(false)}
           data-current-selected={selected ?? 0}
           data-testid="autocomplete-input"
           ref={inputRef}/>
@@ -240,10 +238,11 @@ export function AutocompleteInput({
         className={cn(
           "absolute flex flex-col bg-popover min-w-40 w-fit max-h-32 p-1 border rounded-sm overflow-hidden overflow-y-auto",
           "o-scrollbar",
-          (!enabled || isInvisible) ? "hidden" : "",
+          (!enabled || isInvisible || !inputFocused) ? "hidden" : "",
           positionReady ? "visible" : "invisible"
         )}
         style={{ top, left }}
+        onMouseDown={(e) => e.preventDefault()}
         data-testid="autocomplete-list"
         ref={listContainerRef}>
         {advisedList.map((item, i) => (
