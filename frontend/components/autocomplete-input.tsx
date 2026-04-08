@@ -94,9 +94,6 @@ export function AutocompleteInput({
   };
 
   const handleKeydown = async (e: KeyboardEvent<HTMLInputElement>) => {
-    if(!listContainerRef.current) return;
-    const listContainer = listContainerRef.current;
-    const listRect = listContainer.getBoundingClientRect();
     const advised = await getCurrentState(setAdvisedList);
     const cSelected = await getCurrentState(setSelected);
 
@@ -123,32 +120,12 @@ export function AutocompleteInput({
         e.preventDefault();
         const nextSelectedUp = (cSelected > 0) ? (cSelected - 1) : (advised.length - 1);
         setSelected(nextSelectedUp);
-
-        const nextItemUp = listContainer.children[nextSelectedUp] as HTMLButtonElement;
-        const itemUpRect = nextItemUp.getBoundingClientRect();
-
-        if(itemUpRect.top < listRect.top) {
-          listContainer.scrollTop -= (listContainer.firstChild as HTMLButtonElement).clientHeight;
-        }
-        if(cSelected === 0) {
-          listContainer.scrollTop = listContainer.scrollHeight;
-        }
         break;
       case "ArrowDown":
         if(cSelected === null) return;
         e.preventDefault();
         const nextSelectedDown = (cSelected < advised.length - 1) ? (cSelected + 1) : 0;
         setSelected(nextSelectedDown);
-
-        const nextItemDown = listContainer.children[nextSelectedDown] as HTMLButtonElement;
-        const itemDownRect = nextItemDown.getBoundingClientRect();
-
-        if(itemDownRect.bottom > listRect.bottom) {
-          listContainer.scrollTop += (listContainer.firstChild as HTMLButtonElement).clientHeight;
-        }
-        if(cSelected === advised.length - 1) {
-          listContainer.scrollTop = 0;
-        }
         break;
     }
 
@@ -203,6 +180,17 @@ export function AutocompleteInput({
     setLeft(inputGroup.offsetLeft + getCaretCoordinates(input, input.selectionStart ?? 0).left);
     setPositionReady(true);
   }, [advisedList, inputRef, inputGroupRef, listContainerRef]);
+
+  // Scroll the selected item into view when selection changes
+  useEffect(() => {
+    if(!listContainerRef.current || selected === null) return;
+
+    const listContainer = listContainerRef.current;
+    const selectedItem = listContainer.children[selected] as HTMLButtonElement;
+    if(selectedItem?.scrollIntoView) {
+      selectedItem.scrollIntoView({ block: "nearest" });
+    }
+  }, [selected]);
 
   return (
     <InputContext.Provider value={{
