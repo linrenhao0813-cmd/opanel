@@ -31,7 +31,7 @@ repositories {
 
 dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
-    shadowImplementation "com.cozooo.dlc_manager:dlc-fileops-helper:1.0.0"
+    shadowImplementation "com.cozooo.dlc_manager:dlc-fileops-helper:1.0.1"
 
     shadowImplementation(project(":core")) {
         // To avoid conflict

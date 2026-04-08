@@ -479,7 +479,7 @@ public class NeoServer implements OPanelServer {
         } else if(!isActuallyDisabled) {
             // Cancel the pending operation of renaming from .jar to .jar.disabled
             Path targetPath = modsPath.resolve(fileName + OPanelPlugin.DISABLED_SUFFIX);
-            FileOpsHelperApi.cancelPendingOperationsByTarget(List.of(targetPath.toAbsolutePath().toString()));
+            FileOpsHelperApi.cancelPendingOperationsByTarget(List.of(targetPath.toString()));
             throw new ActLaterException();
         }
     }
