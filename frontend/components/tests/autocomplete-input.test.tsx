@@ -211,4 +211,71 @@ describe("test autocomplete input", () => {
     await user.type(inputElem, "{Enter}");
     expect(inputElem.value).toBe("test3");
   });
+
+  it("should hide the autocomplete list when input loses focus", async () => {
+    const user = userEvent.setup();
+    const ref = createRef<HTMLInputElement>();
+    const elem = render(
+      <AutocompleteInput
+        autoFocus
+        itemList={["test1", "test2", "test3"]}
+        prefix="/"
+        maxLength={256}
+        ref={ref}/>
+    );
+    const inputElem = elem.getByTestId("autocomplete-input") as HTMLInputElement;
+    const listElem = elem.getByTestId("autocomplete-list");
+
+    await user.type(inputElem, "t");
+    expect(listElem).not.toHaveClass("hidden");
+
+    await user.tab();
+    expect(listElem).toHaveClass("hidden");
+  });
+
+  it("should show the autocomplete list when input regains focus with existing value", async () => {
+    const user = userEvent.setup();
+    const ref = createRef<HTMLInputElement>();
+    const elem = render(
+      <AutocompleteInput
+        autoFocus
+        itemList={["test1", "test2", "test3"]}
+        prefix="/"
+        maxLength={256}
+        ref={ref}/>
+    );
+    const inputElem = elem.getByTestId("autocomplete-input") as HTMLInputElement;
+    const listElem = elem.getByTestId("autocomplete-list");
+
+    await user.type(inputElem, "t");
+    expect(listElem).not.toHaveClass("hidden");
+
+    await user.tab();
+    expect(listElem).toHaveClass("hidden");
+
+    await user.click(inputElem);
+    expect(listElem).not.toHaveClass("hidden");
+  });
+
+  it("should not hide the autocomplete list when clicking on a list item", async () => {
+    const user = userEvent.setup();
+    const ref = createRef<HTMLInputElement>();
+    const elem = render(
+      <AutocompleteInput
+        autoFocus
+        itemList={["test1", "test2", "test3"]}
+        prefix="/"
+        maxLength={256}
+        ref={ref}/>
+    );
+    const inputElem = elem.getByTestId("autocomplete-input") as HTMLInputElement;
+    const listElem = elem.getByTestId("autocomplete-list");
+
+    await user.type(inputElem, "t");
+    expect(listElem).not.toHaveClass("hidden");
+
+    const firstItem = elem.getByText("test1");
+    await user.click(firstItem);
+    expect(listElem).not.toHaveClass("hidden");
+  });
 });

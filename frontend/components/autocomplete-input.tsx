@@ -25,11 +25,7 @@ function AutocompleteItem({
   selected: boolean
   index: number
 }) {
-  const { argValue, prefix, setSelected, complete } = useContext(InputContext);
-  const hasPrefix = prefix && argValue.startsWith(prefix);
-
-  // Pure argValue is argValue that has been removed the prefix if it has prefix
-  const pureArgValue = hasPrefix ? argValue.substring(prefix.length) : argValue;
+  const { setSelected, complete } = useContext(InputContext);
 
   return (
     <Button
@@ -42,8 +38,7 @@ function AutocompleteItem({
       data-selected={selected}
       onClick={() => setSelected(index)}
       onDoubleClick={() => complete()}>
-      <span className="font-bold">{pureArgValue}</span>
-      <span>{name.replace(pureArgValue, "")}</span>
+      {name}
     </Button>
   );
 }
@@ -69,12 +64,13 @@ export function AutocompleteInput({
   const [advisedList, setAdvisedList] = useState<string[]>([]);
   const [selected, setSelected] = useState<number | null>(null); // index
   const [positionReady, setPositionReady] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const inputGroupRef = useRef<HTMLDivElement | null>(null);
   const prevItemList = usePrevious(itemList);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const isInvisible = value.length === 0 || advisedList.length === 0;
 
-  // Do tab complete
+  /** Do tab complete */
   const complete = async () => {
     if(!inputRef.current) return 0;
 
@@ -98,9 +94,6 @@ export function AutocompleteInput({
   };
 
   const handleKeydown = async (e: KeyboardEvent<HTMLInputElement>) => {
-    if(!listContainerRef.current) return;
-    const listContainer = listContainerRef.current;
-    const listRect = listContainer.getBoundingClientRect();
     const advised = await getCurrentState(setAdvisedList);
     const cSelected = await getCurrentState(setSelected);
 
@@ -127,32 +120,12 @@ export function AutocompleteInput({
         e.preventDefault();
         const nextSelectedUp = (cSelected > 0) ? (cSelected - 1) : (advised.length - 1);
         setSelected(nextSelectedUp);
-
-        const nextItemUp = listContainer.children[nextSelectedUp] as HTMLButtonElement;
-        const itemUpRect = nextItemUp.getBoundingClientRect();
-
-        if(itemUpRect.top < listRect.top) {
-          listContainer.scrollTop -= (listContainer.firstChild as HTMLButtonElement).clientHeight;
-        }
-        if(cSelected === 0) {
-          listContainer.scrollTop = listContainer.scrollHeight;
-        }
         break;
       case "ArrowDown":
         if(cSelected === null) return;
         e.preventDefault();
         const nextSelectedDown = (cSelected < advised.length - 1) ? (cSelected + 1) : 0;
         setSelected(nextSelectedDown);
-
-        const nextItemDown = listContainer.children[nextSelectedDown] as HTMLButtonElement;
-        const itemDownRect = nextItemDown.getBoundingClientRect();
-
-        if(itemDownRect.bottom > listRect.bottom) {
-          listContainer.scrollTop += (listContainer.firstChild as HTMLButtonElement).clientHeight;
-        }
-        if(cSelected === advised.length - 1) {
-          listContainer.scrollTop = 0;
-        }
         break;
     }
 
@@ -208,6 +181,17 @@ export function AutocompleteInput({
     setPositionReady(true);
   }, [advisedList, inputRef, inputGroupRef, listContainerRef]);
 
+  // Scroll the selected item into view when selection changes
+  useEffect(() => {
+    if(!listContainerRef.current || selected === null) return;
+
+    const listContainer = listContainerRef.current;
+    const selectedItem = listContainer.children[selected] as HTMLButtonElement;
+    if(selectedItem?.scrollIntoView) {
+      selectedItem.scrollIntoView({ block: "nearest" });
+    }
+  }, [selected]);
+
   return (
     <InputContext.Provider value={{
       argValue: getInputtedArgumentStr(value, Math.min(inputRef.current?.selectionStart ?? 0, value.length)),
@@ -224,6 +208,8 @@ export function AutocompleteInput({
             setValue((e.target as HTMLInputElement).value);
             if(onInput) onInput(e);
           }}
+          onFocus={() => setInputFocused(true)}
+          onBlur={() => setInputFocused(false)}
           data-current-selected={selected ?? 0}
           data-testid="autocomplete-input"
           ref={inputRef}/>
@@ -240,10 +226,11 @@ export function AutocompleteInput({
         className={cn(
           "absolute flex flex-col bg-popover min-w-40 w-fit max-h-32 p-1 border rounded-sm overflow-hidden overflow-y-auto",
           "o-scrollbar",
-          (!enabled || isInvisible) ? "hidden" : "",
+          (!enabled || isInvisible || !inputFocused) ? "hidden" : "",
           positionReady ? "visible" : "invisible"
         )}
         style={{ top, left }}
+        onMouseDown={(e) => e.preventDefault()}
         data-testid="autocomplete-list"
         ref={listContainerRef}>
         {advisedList.map((item, i) => (

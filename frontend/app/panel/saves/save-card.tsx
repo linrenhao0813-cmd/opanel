@@ -64,16 +64,16 @@ export function SaveCard({
   };
 
   return (
-    <Card className={cn(
-      "rounded-md min-h-fit p-3 flex flex-col justify-between dark:bg-transparent hover:bg-muted",
-      isCurrent && "bg-green-50 hover:bg-background border-green-600 dark:bg-green-950 dark:border-green-900",
-      className
-    )}>
+    <Card
+      className={cn(
+        "rounded-md min-h-fit p-3 flex flex-col justify-between dark:bg-transparent hover:bg-muted cursor-pointer",
+        isCurrent && "bg-green-50 hover:bg-background border-green-600 dark:bg-green-950 dark:border-green-900",
+        className
+      )}
+      onClick={() => handleSetCurrent()}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div
-            className="w-full flex flex-col gap-1 px-1 overflow-hidden cursor-pointer"
-            onClick={() => handleSetCurrent()}>
+          <div className="w-full flex flex-col gap-1 px-1 overflow-hidden">
             <MinecraftText className="wrap-anywhere">{base64ToString(displayName)}</MinecraftText>
             <span className="text-sm text-muted-foreground w-full overflow-hidden whitespace-nowrap text-ellipsis">{name}</span>
           </div>
@@ -91,7 +91,7 @@ export function SaveCard({
           )}
           <span className={cn("mr-2 text-xs text-muted-foreground", googleSansCode.className)}>{formatDataSize(size)}</span>
         </div>
-        <div className="flex self-end [&_button]:cursor-pointer">
+        <div className="flex self-end [&_button]:cursor-pointer" onClick={(e) => e.stopPropagation()}>
           {
             isCurrent
             ? (
