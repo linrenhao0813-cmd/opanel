@@ -30,6 +30,8 @@ The features of OPanel include:
 - Plugin manager that allows you to enable / disable plugins or mods and view detailed plugin information.
 - Server terminal that can directly send messages or execute commands from the web panel.
 - Server logs manager and viewer.
+- MCP Server: You can use your AI agent (e.g. Claude Code, OpenClaw) to manage your server via [OPanel MCP](https://github.com/opanel-mc/opanel-mcp).
+- Open API: You can configure OPanel Open API to show real-time server status and statistics on the official website of your server.
 
 ### Screenshots
 

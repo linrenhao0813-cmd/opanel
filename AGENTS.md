@@ -86,40 +86,9 @@ OPanel
 - **camelCase**: 变量名、http和WebSocket传输的json对象中的键名
 - **PascalCase**: 类名
 
-### 风格规范
-
-- 对于`if` `for` `while` `switch`等关键字，后面不能跟空格，必须紧接左括号`(`，如：`if(...` `for(...`
-- 禁止"换行+{+换行"：
-```
-// 错误
-if(...)
-{
-  // ...
-}
-
-// 正确
-if(...) {
-  // ...
-}
-```
-- 对于复杂的条件判断，采用if语句“提早退出”策略，且如果if的条件语句较短，可以将return直接跟在同一行结尾，不用写大括号，如：
-```ts
-useEffect(() => {
-  if(!client) return; // return直接跟在同一行结尾
-  // ...
-}, [client, /*...*/]);
-```
-- 在编写有多行props的jsx组件时，结尾的`/>`需要和最后一个prop在同一行，且中间不能有空格隔开，如：
-```tsx
-<MyComponent
-  className="flex justify-center gap-2"
-  propsA="hello"
-  propsB="world"/>
-```
-
 ### 代码规范
 
-- 对于前端部分，请查看`/frontend/eslint.config.mjs`，特别注意import语句的顺序
+- 对于前端部分，请查看`/frontend/eslint.config.mjs`
 - 对于后端与游戏具体实现部分，与前后代码风格一致即可
 
 ### i18n 国际化文案
