@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { format } from "date-format-parse";
 import AnsiConverter from "ansi-to-html";
+import { v7 as uuidv7 } from "uuid";
 import { cn, purifyUnsafeText } from "@/lib/utils";
 import { getSettings } from "@/lib/settings";
 import { googleSansCode } from "@/lib/fonts";
@@ -36,6 +37,7 @@ const Log = memo(({
   source,
   line,
   thrownMessage,
+  uuid,
   simple,
   visible
 }: ConsoleLog & {
@@ -68,7 +70,8 @@ const Log = memo(({
         googleSansCode.className
       )}
       style={{ fontSize: getSettings("terminal.font-size") +"px" }}
-      data-time={time}>
+      data-time={time}
+      data-id={uuid}>
       {getSettings("terminal.log-time") && (
         <span className="text-blue-500 dark:text-blue-400">{`[${format(new Date(time), "HH:mm:ss")}]`}</span>
       )}
@@ -194,6 +197,7 @@ export function TerminalViewer({
     client.subscribe("init", (data: ConsoleLog[]) => {
       for(let i = data.length - MAX_LOG_LINES > 0 ? data.length - MAX_LOG_LINES : 0; i < data.length; i++) {
         data[i].line = purifyUnsafeText(data[i].line);
+        data[i].uuid = uuidv7();
         logsBufferRef.current.push(data[i]);
       }
       scheduleFlushLogsBuffer();
@@ -201,6 +205,7 @@ export function TerminalViewer({
 
     client.subscribe("log", (data: ConsoleLog) => {
       data.line = purifyUnsafeText(data.line);
+      data.uuid = uuidv7();
       logsBufferRef.current.push(data);
       scheduleFlushLogsBuffer();
     });
@@ -218,7 +223,7 @@ export function TerminalViewer({
           {...log}
           simple={simple}
           visible={getLogLevelId(log.level) >= getLogLevelId(level ?? defaultLogLevel)}
-          key={log.time}/>
+          key={log.uuid}/>
       ))}
     </div>
   );
