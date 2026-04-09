@@ -62,6 +62,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@stylistic/eslint-plugin": "^5.10.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -78,6 +79,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
     "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-react": "^7.37.5",
     "jsdom": "^28.1.0",
     "tailwind-scrollbar": "^4.0.2",
     "tailwindcss": "^4",

@@ -24,9 +24,7 @@ function preprocessLogLine(line: string): string {
     line = new AnsiConverter().toHtml(parseTextToANSI(line.replaceAll("\x7f", secSign)));
   }
 
-  return line.replace(urlRegex, (url) => {
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-  });
+  return line.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
 }
 
 function Log({

@@ -97,7 +97,9 @@ export function WhitelistSheet({
           <SheetClose asChild>
             <Button
               className="cursor-pointer"
-              onClick={() => saveServerWhitelist()}>{$("dialog.save")}</Button>
+              onClick={() => saveServerWhitelist()}>
+              {$("dialog.save")}
+            </Button>
           </SheetClose>
         </SheetFooter>
       </SheetContent>

@@ -25,9 +25,9 @@ const columns: ColumnDef<Row, unknown>[] = [
   }
 ];
 
-const createRows = (size: number): Row[] => {
-  return Array.from({ length: size }, (_, index) => ({ id: index + 1 }));
-};
+const createRows = (size: number): Row[] => (
+  Array.from({ length: size }, (_, index) => ({ id: index + 1 }))
+);
 
 describe("test data table", () => {
   afterEach(() => cleanup());

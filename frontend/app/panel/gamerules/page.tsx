@@ -210,7 +210,9 @@ export default function Gamerules() {
               <Button
                 type="reset"
                 variant="outline"
-                onClick={() => window.location.reload()}>{$("gamerules.reset")}</Button>
+                onClick={() => window.location.reload()}>
+                {$("gamerules.reset")}
+              </Button>
               <Button type="submit" disabled={!hasChanged}>{$("dialog.save")}</Button>
             </div>
           </div>

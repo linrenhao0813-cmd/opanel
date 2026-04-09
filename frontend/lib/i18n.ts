@@ -75,13 +75,11 @@ export function localizeRich(id: TranslationKey, ...args: (string | React.ReactN
   return parsed;
 }
 
-export const $ = (id: TranslationKey, ...args: any[]) => {
-  return (
-    args.length === 0
-    ? localize(id)
-    : localizeRich(id, ...args)
-  );
-};
+export const $ = (id: TranslationKey, ...args: any[]) => (
+  args.length === 0
+  ? localize(id)
+  : localizeRich(id, ...args)
+);
 
 export const $mc = (itemId: string) => {
   if(!itemId.startsWith("minecraft:")) return itemId;

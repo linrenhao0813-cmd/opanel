@@ -23,10 +23,10 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/settings", () => ({
   getSettings: vi.fn((key: string) => {
-    if (key === "dashboard.monitor-interval" || key === "terminal.font-size" || key === "monaco.font-size") return 14;
-    if (key === "terminal.max-log-lines" || key === "code-of-conduct.auto-saving-interval") return 1000;
-    if (key === "terminal.log-level") return "INFO";
-    if (key === "system.language") return "zh-CN";
+    if(key === "dashboard.monitor-interval" || key === "terminal.font-size" || key === "monaco.font-size") return 14;
+    if(key === "terminal.max-log-lines" || key === "code-of-conduct.auto-saving-interval") return 1000;
+    if(key === "terminal.log-level") return "INFO";
+    if(key === "system.language") return "zh-CN";
     return "";
   }),
   changeSettings: vi.fn(),
