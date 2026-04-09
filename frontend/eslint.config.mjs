@@ -59,6 +59,7 @@ const eslintConfig = [
       "arrow-body-style": ["error", "as-needed"],
       "react/jsx-closing-bracket-location": ["error", "after-props"],
       "react/jsx-closing-tag-location": ["error", "tag-aligned"],
+      "react/display-name": "off",
       "@stylistic/implicit-arrow-linebreak": ["error", "beside"],
       "@stylistic/nonblock-statement-body-position": ["error", "beside"],
     }
