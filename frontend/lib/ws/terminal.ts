@@ -21,6 +21,7 @@ export interface ConsoleLog {
   source: string
   line: string
   thrownMessage: string | null
+  uuid?: string
 }
 
 export type TerminalMessageType = (
