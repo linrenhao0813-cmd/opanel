@@ -25,7 +25,7 @@ import { SecurityDialog } from "./security-dialog";
 import { UpdateDialog } from "./update-dialog";
 import { cn } from "@/lib/utils";
 import { googleSansCode } from "@/lib/fonts";
-import { AvatarProvider, CapeProvider, SkinProvider } from "@/lib/types";
+import { AvatarProvider, SkinProvider } from "@/lib/types";
 import { type LanguageCode, languages } from "@/lang";
 import { $ } from "@/lib/i18n";
 import { sendDeleteRequest } from "@/lib/api";
@@ -168,7 +168,7 @@ export default function Settings() {
                   </SelectContent>
                 </Select>
               }/>
-            <SettingsItem
+            {/* <SettingsItem
               id="players.cape-provider"
               name={$("settings.players.cape-provider")}
               description={$("settings.players.cape-provider.description")}
@@ -185,7 +185,7 @@ export default function Settings() {
                     <SelectItem value={CapeProvider.CRAFATAR} title={CapeProvider.CRAFATAR}>Crafatar</SelectItem>
                   </SelectContent>
                 </Select>
-              }/>
+              }/> */}
           </Section>
         </TabsContent>
         <TabsContent value="terminal">
