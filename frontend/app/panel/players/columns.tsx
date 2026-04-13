@@ -22,6 +22,8 @@ import { Alert } from "@/components/alert";
 import { getSettings } from "@/lib/settings";
 import { $ } from "@/lib/i18n";
 
+import SteveAvatar from "@/assets/images/steve-avatar.png";
+
 export const playerColumns: ColumnDef<Player>[] = [
   {
     accessorKey: "name",
@@ -36,7 +38,14 @@ export const playerColumns: ColumnDef<Player>[] = [
                 name
                 ? (
                   <div className="flex items-center gap-2 cursor-pointer">
-                    <img src={getSettings("players.avatar-provider") + name} alt={name} width={17} height={17}/>
+                    <img
+                      src={getSettings("players.avatar-provider") + name}
+                      alt={name}
+                      width={17}
+                      height={17}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = SteveAvatar.src;
+                      }}/>
                     <span className="font-semibold">{name}</span>
                   </div>
                 )
@@ -231,7 +240,14 @@ export const bannedColumns: ColumnDef<Player>[] = [
           <TooltipTrigger>
             <PlayerSheet player={row.original} asChild>
               <div className="flex items-center gap-2 cursor-pointer">
-                <img src={getSettings("players.avatar-provider") + uuid} alt={name} width={17} height={17}/>
+                <img
+                  src={getSettings("players.avatar-provider") + uuid}
+                  alt={name}
+                  width={17}
+                  height={17}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = SteveAvatar.src;
+                  }}/>
                 <span className="font-semibold">{name}</span>
               </div>
             </PlayerSheet>

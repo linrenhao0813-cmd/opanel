@@ -18,9 +18,9 @@ import { MotdEditor } from "./motd-editor";
 import { FaviconDialog } from "./favicon-dialog";
 import { googleSansCode } from "@/lib/fonts";
 import { $ } from "@/lib/i18n";
+import { ButtonGroup } from "@/components/ui/button-group";
 
 import PackIcon from "@/assets/images/pack.png";
-import { ButtonGroup } from "@/components/ui/button-group";
 
 function ControlButtonGroup({
   className

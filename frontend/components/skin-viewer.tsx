@@ -1,6 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import MinecraftSkinViewer from "minecraft-skin-viewer";
+import axios from "axios";
 import { getSettings } from "@/lib/settings";
+
+const CAPES_API_BASE_URL = "https://api.capes.dev";
+
+interface CapesApiResponse {
+  imageUrl: string
+}
 
 export function SkinViewer({
   name,
@@ -10,16 +17,30 @@ export function SkinViewer({
   uuid: string
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const skinViewerRef = useRef<MinecraftSkinViewer | null>(null);
+
+  const loadCape = useCallback(async () => {
+    try {
+      const { data } = await axios.get<CapesApiResponse>(`${CAPES_API_BASE_URL}/load/${uuid}/minecraft`);
+      skinViewerRef.current?.loadCape(data.imageUrl);
+    } catch (e) {
+      //
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, uuid]);
 
   useEffect(() => {
     if(!canvasRef.current) return;
 
-    new MinecraftSkinViewer({
+    skinViewerRef.current = new MinecraftSkinViewer({
       canvas: canvasRef.current,
-      skin: getSettings("players.skin-provider") + name,
-      cape: getSettings("players.cape-provider") + uuid
+      skin: getSettings("players.skin-provider") + name
     });
-  }, [name, uuid]);
+  }, [name]);
+
+  useEffect(() => {
+    loadCape();
+  }, [loadCape]);
 
   return <canvas ref={canvasRef}/>;
 }
