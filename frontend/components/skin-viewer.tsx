@@ -26,7 +26,8 @@ export function SkinViewer({
     } catch (e) {
       //
     }
-  }, [uuid]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, uuid]);
 
   useEffect(() => {
     if(!canvasRef.current) return;
