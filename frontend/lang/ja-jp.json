@@ -399,6 +399,7 @@
   "logs.title": "ログ",
   "logs.description": "サーバーのすべてのログファイルを管理および確認する",
   "logs.fetch.error": "ログ一覧を取得できません",
+  "logs.search.placeholder": "検索ログ...",
   "logs.clear": "ログをクリア",
   "logs.clear.success": "現在のログ以外のすべてのログがクリアされました",
   "logs.clear.error": "ログのクリアに失敗しました",

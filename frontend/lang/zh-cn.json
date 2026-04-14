@@ -399,6 +399,7 @@
   "logs.title": "日志",
   "logs.description": "管理和查看服务器的所有日志文件",
   "logs.fetch.error": "无法获取日志列表",
+  "logs.search.placeholder": "搜索日志...",
   "logs.clear": "清空日志",
   "logs.clear.success": "已清空除当前日志外的所有日志",
   "logs.clear.error": "清空日志失败",

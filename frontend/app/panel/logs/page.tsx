@@ -3,7 +3,7 @@
 import type { LogsResponse } from "@/lib/types";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ScrollText, Trash2 } from "lucide-react";
+import { ScrollText, Search, Trash2 } from "lucide-react";
 import { DataTable } from "@/components/data-table";
 import { sendDeleteRequest, sendGetRequest, toastError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,11 @@ import { sortLogs } from "./log-utils";
 import { SubPage } from "../sub-page";
 import { emitter } from "@/lib/emitter";
 import { $ } from "@/lib/i18n";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 
 export default function Logs() {
   const [logs, setLogs] = useState<string[]>([]);
+  const [searchString, setSearchString] = useState<string>("");
 
   const fetchServerLogs = async () => {
     try {
@@ -59,7 +61,16 @@ export default function Logs() {
       category={$("sidebar.management")}
       icon={<ScrollText />}
       className="flex-1 flex flex-col gap-5">
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        <InputGroup className="w-fit">
+          <InputGroupAddon>
+            <Search />
+          </InputGroupAddon>
+          <InputGroupInput
+            value={searchString}
+            placeholder={$("logs.search.placeholder")}
+            onChange={(e) => setSearchString(e.target.value)}/>
+        </InputGroup>
         <Alert
           title={$("logs.clear.alert.title")}
           description={$("logs.clear.alert.description")}
@@ -75,7 +86,9 @@ export default function Logs() {
       </div>
       <DataTable
         columns={columns}
-        data={sortLogs(logs)}
+        data={sortLogs(
+          logs.filter((log) => log.toLowerCase().includes(searchString.toLowerCase()))
+        )}
         pagination
         paginationQueryKey="page"
         fallbackMessage={$("logs.empty")}
