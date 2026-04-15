@@ -1,7 +1,8 @@
 import type { ArrayItem, GithubReleaseResponse } from "@/lib/types";
+import Link from "next/link";
 import { type PropsWithChildren, useEffect, useState } from "react";
 import * as MarkdownJSX from "markdown-to-jsx";
-import { RotateCw } from "lucide-react";
+import { RotateCw, SquareArrowOutUpRight } from "lucide-react";
 import {
   Dialog,
   DialogClose,
@@ -128,11 +129,22 @@ export function UpdateDialog({
               onCheckedChange={setPreviewEnabled}/>
             <Label>{$("settings.update.preview-channel")}</Label>
           </div>
-          <DialogClose asChild>
-            <Button variant="outline">
-              {$("dialog.close")}
-            </Button>
-          </DialogClose>
+
+          <div className="space-x-2">
+            {hasNewUpdate && (
+              <Button className="ml-auto" asChild>
+                <Link href="https://dist.opanel.cn" target="_blank" rel="noopener noreferrer">
+                  下载更新
+                  <SquareArrowOutUpRight className="!size-3"/>
+                </Link>
+              </Button>
+            )}
+            <DialogClose asChild>
+              <Button variant="outline">
+                {$("dialog.close")}
+              </Button>
+            </DialogClose>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
