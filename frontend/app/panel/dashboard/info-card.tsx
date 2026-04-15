@@ -189,11 +189,11 @@ export function InfoCard({
             {ctx && <MinecraftText maxLines={2} maxCharPerLine={45}>{"§7"+ base64ToString(ctx.motd)}</MinecraftText>}
           </div>
         </div>
-        <div className="p-4 flex flex-col justify-between">
+        <div className="p-4 max-lg:p-1 flex flex-col justify-between">
           <Badge
             variant="outline"
             title={warningState ? $("dashboard.info.status.warning.title") : ""}
-            className="self-end max-lg:hidden cursor-help">
+            className="self-end cursor-help">
             <div className={cn("w-2 h-2 rounded-full", ctx ? (warningState ? "bg-yellow-600" : "bg-green-600") : "bg-red-700")}/>
             {
               ctx
