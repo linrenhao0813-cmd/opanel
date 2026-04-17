@@ -20,8 +20,12 @@ public class OpenPlayersController extends BaseController {
         List<HashMap<String, Object>> players = server.getPlayers().stream()
                 .map(player -> {
                     HashMap<String, Object> playerObj = new HashMap<>();
-                    playerObj.put("uuid", player.getUUID());
                     playerObj.put("name", player.getName());
+                    playerObj.put("uuid", player.getUUID());
+                    playerObj.put("isOnline", player.isOnline());
+                    playerObj.put("isBanned", player.isBanned());
+                    playerObj.put("gamemode", player.getGameMode().getName());
+                    playerObj.put("banReason", player.getBanReason());
                     return playerObj;
                 })
                 .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);

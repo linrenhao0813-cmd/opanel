@@ -140,8 +140,12 @@ export default function OpenAPI() {
               <InterfaceRequest def={`{}`}/>
               <InterfaceResponse def={`{
   players: {
-    uuid: string
     name: string
+    uuid: string
+    isOnline: boolean
+    isBanned: boolean
+    gamemode: "adventure" | "creative" | "survival" | "spectator"
+    banReason?: string
   }[]
 }`}/>
             </Interface>
