@@ -9,4 +9,5 @@ public interface Connectable {
     void onConnect(WsContext ctx);
     void onClose(WsCloseContext ctx);
     void onError(WsErrorContext ctx);
+    void onShutdown();
 }

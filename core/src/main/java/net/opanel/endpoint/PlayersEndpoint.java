@@ -4,7 +4,6 @@ import io.javalin.Javalin;
 import io.javalin.websocket.WsConfig;
 import io.javalin.websocket.WsContext;
 import net.opanel.OPanel;
-import net.opanel.common.OPanelPlayer;
 import net.opanel.event.*;
 import net.opanel.utils.Utils;
 
@@ -13,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 public class PlayersEndpoint extends BaseEndpoint {
     private static class PlayersPacket<D> extends Packet<D> {
@@ -29,10 +29,14 @@ public class PlayersEndpoint extends BaseEndpoint {
 
     private final ConcurrentHashMap<String, Long> joinTimeMap = new ConcurrentHashMap<>();
 
+    private final Consumer<OPanelPlayerJoinEvent> joinListener;
+    private final Consumer<OPanelPlayerLeaveEvent> leaveListener;
+    private final Consumer<OPanelPlayerGameModeChangeEvent> gamemodeChangeListener;
+
     public PlayersEndpoint(Javalin app, WsConfig ws, OPanel plugin) {
         super(app, ws, plugin);
 
-        EventManager.get().on(EventType.PLAYER_JOIN, (OPanelPlayerJoinEvent event) -> {
+        joinListener = (OPanelPlayerJoinEvent event) -> {
             try {
                 final long joinTime = System.currentTimeMillis();
                 joinTimeMap.put(event.getPlayer().getUUID(), joinTime);
@@ -42,9 +46,9 @@ public class PlayersEndpoint extends BaseEndpoint {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        });
+        };
 
-        EventManager.get().on(EventType.PLAYER_LEAVE, (OPanelPlayerLeaveEvent event) -> {
+        leaveListener = (OPanelPlayerLeaveEvent event) -> {
             try {
                 joinTimeMap.remove(event.getPlayer().getUUID());
 
@@ -55,9 +59,9 @@ public class PlayersEndpoint extends BaseEndpoint {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        });
+        };
 
-        EventManager.get().on(EventType.PLAYER_GAMEMODE_CHANGE, (OPanelPlayerGameModeChangeEvent event) -> {
+        gamemodeChangeListener = (OPanelPlayerGameModeChangeEvent event) -> {
             try {
                 List<String> whitelistedNames = server.getWhitelist().getNames();
                 HashMap<String, Object> playerInfo = event.getPlayer().serialize(server.isWhitelistEnabled(), whitelistedNames, null);
@@ -66,7 +70,11 @@ public class PlayersEndpoint extends BaseEndpoint {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        });
+        };
+
+        EventManager.get().on(EventType.PLAYER_JOIN, joinListener);
+        EventManager.get().on(EventType.PLAYER_LEAVE, leaveListener);
+        EventManager.get().on(EventType.PLAYER_GAMEMODE_CHANGE, gamemodeChangeListener);
     }
 
     @Override
@@ -74,6 +82,13 @@ public class PlayersEndpoint extends BaseEndpoint {
         sendPlayerList(ctx);
 
         subscribe(ctx.session, PlayersPacket.FETCH, this::sendPlayerList);
+    }
+
+    @Override
+    public void onShutdown() {
+        EventManager.get().off(EventType.PLAYER_JOIN, joinListener);
+        EventManager.get().off(EventType.PLAYER_LEAVE, leaveListener);
+        EventManager.get().off(EventType.PLAYER_GAMEMODE_CHANGE, gamemodeChangeListener);
     }
 
     private void sendPlayerList(WsContext ctx) {

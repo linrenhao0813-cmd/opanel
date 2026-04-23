@@ -73,7 +73,10 @@ public abstract class BaseEndpoint implements Connectable {
         });
 
         app.events(event -> {
-            event.serverStopping(this::closeAllSessions);
+            event.serverStopping(() -> {
+                closeAllSessions();
+                onShutdown();
+            });
         });
     }
 
@@ -111,6 +114,9 @@ public abstract class BaseEndpoint implements Connectable {
 
     @Override
     public void onError(WsErrorContext ctx) { }
+
+    @Override
+    public void onShutdown() { }
 
     protected void sendErrorMessage(WsContext ctx, HttpStatus status) {
         ctx.send(new Packet<>(Packet.ERROR, status.getCode()));

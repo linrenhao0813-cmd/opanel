@@ -2,6 +2,7 @@ package net.opanel.endpoint;
 
 import io.javalin.Javalin;
 import io.javalin.http.HttpStatus;
+import io.javalin.websocket.WsCloseContext;
 import io.javalin.websocket.WsConfig;
 import io.javalin.websocket.WsContext;
 import net.opanel.OPanel;
@@ -15,6 +16,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Consumer;
 
 public class InventoryEndpoint extends BaseEndpoint {
     private static class InventoryPacket<D> extends Packet<D> {
@@ -29,8 +31,9 @@ public class InventoryEndpoint extends BaseEndpoint {
 
     private static final ConcurrentHashMap<String, Set<Session>> sessionsMap = new ConcurrentHashMap<>();
 
-    // To avoid duplicated inventory listener from registering
-    private boolean hasInventoryListenerRegistered = false;
+    // To avoid duplicated inventory listener from registering.
+    // Guarded by `this` monitor; held listener reference is reused for off().
+    private Consumer<OPanelPlayerInventoryChangeEvent> inventoryChangeListener;
 
     public InventoryEndpoint(Javalin app, WsConfig ws, OPanel plugin) {
         super(app, ws, plugin);
@@ -87,22 +90,46 @@ public class InventoryEndpoint extends BaseEndpoint {
             }
         });
 
-        if(!hasInventoryListenerRegistered) {
-            EventManager.get().on(EventType.PLAYER_INVENTORY_CHANGE, (OPanelPlayerInventoryChangeEvent event) -> {
-                final String targetUuid = event.getPlayer().getUUID();
-                if(!sessionsMap.containsKey(targetUuid)) return;
+        ensureInventoryListenerRegistered();
+    }
 
-                HashMap<String, Object> data = event.getInventory().serialize();
-                Set<Session> listenedSessions = sessionsMap.get(targetUuid);
-                for(Session session : listenedSessions) {
-                    if(!session.isOpen()) {
-                        listenedSessions.remove(session);
-                        continue;
-                    }
-                    sendMessage(session, new InventoryPacket<>(InventoryPacket.UPDATE, data));
+    private synchronized void ensureInventoryListenerRegistered() {
+        if(inventoryChangeListener != null) return;
+
+        inventoryChangeListener = (OPanelPlayerInventoryChangeEvent event) -> {
+            final String targetUuid = event.getPlayer().getUUID();
+            Set<Session> listenedSessions = sessionsMap.get(targetUuid);
+            if(listenedSessions == null) return;
+
+            HashMap<String, Object> data = event.getInventory().serialize();
+            for(Session session : listenedSessions) {
+                if(!session.isOpen()) {
+                    listenedSessions.remove(session);
+                    continue;
                 }
-            });
-            hasInventoryListenerRegistered = true;
-        }
+                sendMessage(session, new InventoryPacket<>(InventoryPacket.UPDATE, data));
+            }
+        };
+        EventManager.get().on(EventType.PLAYER_INVENTORY_CHANGE, inventoryChangeListener);
+    }
+
+    @Override
+    public void onClose(WsCloseContext ctx) {
+        final String uuid = ctx.pathParam("uuid");
+        if(uuid.isEmpty()) return;
+
+        sessionsMap.compute(uuid, (k, sessions) -> {
+            if(sessions == null) return null;
+            sessions.remove(ctx.session);
+            return sessions.isEmpty() ? null : sessions;
+        });
+    }
+
+    @Override
+    public synchronized void onShutdown() {
+        if(inventoryChangeListener == null) return;
+
+        EventManager.get().off(EventType.PLAYER_INVENTORY_CHANGE, inventoryChangeListener);
+        inventoryChangeListener = null;
     }
 }
