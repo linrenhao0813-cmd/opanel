@@ -127,9 +127,11 @@ public class InventoryEndpoint extends BaseEndpoint {
 
     @Override
     public synchronized void onShutdown() {
-        if(inventoryChangeListener == null) return;
+        if(inventoryChangeListener != null) {
+            EventManager.get().off(EventType.PLAYER_INVENTORY_CHANGE, inventoryChangeListener);
+            inventoryChangeListener = null;
+        }
 
-        EventManager.get().off(EventType.PLAYER_INVENTORY_CHANGE, inventoryChangeListener);
-        inventoryChangeListener = null;
+        sessionsMap.clear();
     }
 }
