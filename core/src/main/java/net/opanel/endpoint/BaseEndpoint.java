@@ -68,6 +68,7 @@ public abstract class BaseEndpoint implements Connectable {
 
         ws.onClose(ctx -> {
             sessions.remove(ctx.session);
+            sessionListeners.remove(ctx.session);
             onClose(ctx);
         });
 
