@@ -13,12 +13,15 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 public class Utils {
+    private static final SecureRandom rand = new SecureRandom();
+
     /**
      * @see <a href="https://ithelp.ithome.com.tw/articles/10212717">https://ithelp.ithome.com.tw/articles/10212717</a>
      */
@@ -188,7 +191,6 @@ public class Utils {
             throw new IllegalArgumentException("Min number cannot be larger than the max number.");
         }
 
-        SecureRandom rand = new SecureRandom();
         return rand.nextInt(max - min + 1) + min;
     }
 
@@ -197,13 +199,12 @@ public class Utils {
             throw new IllegalArgumentException("The byte length should be larger than zero.");
         }
 
-        SecureRandom rand = new SecureRandom();
         byte[] randBytes = new byte[byteLength];
         rand.nextBytes(randBytes);
 
         StringBuilder sb = new StringBuilder();
         for(byte b : randBytes) {
-            sb.append(String.format("%02x", b));
+            sb.append(String.format("%02x", b & 0xff));
         }
         return sb.toString();
     }
@@ -290,7 +291,7 @@ public class Utils {
 
     public static <T> boolean arrayHas(T[] arr, T obj) {
         for(T item : arr) {
-            if(item.equals(obj)) {
+            if(Objects.equals(item, obj)) {
                 return true;
             }
         }
