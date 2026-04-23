@@ -65,7 +65,7 @@ public class PluginsController extends BaseController {
 
     public Handler getPluginIcon = ctx -> {
         final String fileName = ctx.pathParam("fileName");
-        if(!fileName.endsWith(".jar") && !fileName.endsWith(".jar"+ OPanelPlugin.DISABLED_SUFFIX)) {
+        if(!isValidPluginFileName(fileName)) {
             sendResponse(ctx, HttpStatus.BAD_REQUEST, "Illegal file name.");
             return;
         }
@@ -100,6 +100,10 @@ public class PluginsController extends BaseController {
             }
 
             final String fileName = file.filename();
+            if(!Utils.isSafeFileName(fileName)) {
+                sendResponse(ctx, HttpStatus.BAD_REQUEST, "Illegal file name.");
+                return;
+            }
             if(!fileName.endsWith(".jar")) {
                 sendResponse(ctx, HttpStatus.BAD_REQUEST, "Plugin file should be a .jar file.");
                 return;
@@ -129,7 +133,7 @@ public class PluginsController extends BaseController {
     public Handler togglePlugin = ctx -> {
         final String fileName = ctx.pathParam("fileName");
         final String enabled = ctx.queryParam("enabled");
-        if(!fileName.endsWith(".jar") && !fileName.endsWith(".jar"+ OPanelPlugin.DISABLED_SUFFIX)) {
+        if(!isValidPluginFileName(fileName)) {
             sendResponse(ctx, HttpStatus.BAD_REQUEST, "Illegal file name.");
             return;
         }
@@ -157,7 +161,7 @@ public class PluginsController extends BaseController {
 
     public Handler deletePlugin = ctx -> {
         final String fileName = ctx.pathParam("fileName");
-        if(!fileName.endsWith(".jar") && !fileName.endsWith(".jar"+ OPanelPlugin.DISABLED_SUFFIX)) {
+        if(!isValidPluginFileName(fileName)) {
             sendResponse(ctx, HttpStatus.BAD_REQUEST, "Illegal file name.");
             return;
         }
@@ -180,7 +184,7 @@ public class PluginsController extends BaseController {
 
     public Handler downloadPlugin = ctx -> {
         final String fileName = ctx.pathParam("fileName");
-        if(!fileName.endsWith(".jar") && !fileName.endsWith(".jar"+ OPanelPlugin.DISABLED_SUFFIX)) {
+        if(!isValidPluginFileName(fileName)) {
             sendResponse(ctx, HttpStatus.BAD_REQUEST, "Illegal file name.");
             return;
         }
@@ -201,4 +205,9 @@ public class PluginsController extends BaseController {
         final String downloadId = downloadController.registerPath(filePath);
         ctx.redirect("/file/"+ downloadId +"/"+ fileName.replaceAll("\\"+ OPanelPlugin.DISABLED_SUFFIX +"$", ""));
     };
+
+    private boolean isValidPluginFileName(String fileName) {
+        return Utils.isSafeFileName(fileName)
+                && (fileName.endsWith(".jar") || fileName.endsWith(".jar"+ OPanelPlugin.DISABLED_SUFFIX));
+    }
 }

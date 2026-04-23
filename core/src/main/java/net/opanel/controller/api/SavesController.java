@@ -64,6 +64,11 @@ public class SavesController extends BaseController {
 
     public Handler downloadSave = ctx -> {
         final String saveName = ctx.pathParam("saveName");
+        if(!isValidSaveName(saveName)) {
+            sendResponse(ctx, HttpStatus.BAD_REQUEST, "Illegal save name.");
+            return;
+        }
+
         OPanelSave save = server.getSave(saveName);
         if(save == null) {
             sendResponse(ctx, HttpStatus.NOT_FOUND, "Cannot find the specified save.");
@@ -201,6 +206,11 @@ public class SavesController extends BaseController {
 
     public Handler editSave = ctx -> {
         final String saveName = ctx.pathParam("saveName");
+        if(!isValidSaveName(saveName)) {
+            sendResponse(ctx, HttpStatus.BAD_REQUEST, "Illegal save name.");
+            return;
+        }
+
         SaveEditRequestBodyType reqBody = ctx.bodyAsClass(SaveEditRequestBodyType.class);
 
         try {
@@ -230,6 +240,11 @@ public class SavesController extends BaseController {
 
     public Handler toggleSaveDatapack = ctx -> {
         final String saveName = ctx.pathParam("saveName");
+        if(!isValidSaveName(saveName)) {
+            sendResponse(ctx, HttpStatus.BAD_REQUEST, "Illegal save name.");
+            return;
+        }
+
         final String datapack = ctx.queryParam("datapack");
         final String enabled = ctx.queryParam("enabled");
         if(datapack == null || enabled == null) {
@@ -258,6 +273,11 @@ public class SavesController extends BaseController {
 
     public Handler deleteSave = ctx -> {
         final String saveName = ctx.pathParam("saveName");
+        if(!isValidSaveName(saveName)) {
+            sendResponse(ctx, HttpStatus.BAD_REQUEST, "Illegal save name.");
+            return;
+        }
+
         OPanelSave save = server.getSave(saveName);
         if(save == null) {
             sendResponse(ctx, HttpStatus.NOT_FOUND, "Cannot find the specified save.");
@@ -283,5 +303,9 @@ public class SavesController extends BaseController {
         String difficulty;
         boolean isDifficultyLocked;
         boolean isHardcore;
+    }
+
+    private boolean isValidSaveName(String saveName) {
+        return Utils.isSafeFileName(saveName);
     }
 }
