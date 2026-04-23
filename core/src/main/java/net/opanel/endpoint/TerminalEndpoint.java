@@ -63,4 +63,10 @@ public class TerminalEndpoint extends BaseEndpoint {
             ctx.send(new TerminalPacket<>(TerminalPacket.AUTOCOMPLETE, plugin.getServer().getCommandTabList(data.argIndex, data.command)));
         });
     }
+
+    @Override
+    public void onShutdown() {
+        logListenerManager.clearListeners();
+        hasLogListenerRegistered.set(false);
+    }
 }
