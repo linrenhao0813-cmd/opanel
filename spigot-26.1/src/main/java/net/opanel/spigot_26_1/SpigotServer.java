@@ -197,7 +197,7 @@ public class SpigotServer extends BaseBukkitServer implements OPanelServer, Code
             for(Object rule : Lists.newArrayList(Registry.GAME_RULE)) {
                 try {
                     Object key = getNamespacedKey.invoke(rule);
-                    if(rule == null) continue;
+                    if(key == null) continue;
                     gamerules.put((String) getKey.invoke(key), getGameRuleValue.invoke(world, (GameRule<?>) rule));
                 } catch (Exception e) {
                     //
@@ -237,7 +237,7 @@ public class SpigotServer extends BaseBukkitServer implements OPanelServer, Code
                             sendServerCommand("gamerule "+ key +" "+ value);
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        sendServerCommand("gamerule "+ key +" "+ value);
                     }
                 });
             } catch (Exception e) {
