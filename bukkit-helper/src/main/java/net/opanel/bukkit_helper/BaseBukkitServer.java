@@ -53,8 +53,13 @@ public abstract class BaseBukkitServer implements OPanelServer {
 
     @Override
     public String getVersion() {
-        // getBukkitVersion() -> "<MinecraftVersion>-R0.x-SNAPSHOT"
-        return server.getBukkitVersion().split("-")[0];
+        String version = server.getBukkitVersion();
+        // "<MinecraftVersion>-R0.x-SNAPSHOT" -> MinecraftVersion
+        version = version.split("-")[0];
+        // "<MinecraftVersion>.build.<PaperBuildVersion>" -> MinecraftVersion
+        version = version.split(".build.")[0];
+
+        return version;
     }
 
     @Override

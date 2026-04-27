@@ -2,6 +2,7 @@ package net.opanel.spigot_26_1;
 
 import com.cozooo.dlc_fileops_helper.FileOpsHelperConstants;
 import com.cozooo.dlc_fileops_helper.api.FileOpsHelperApi;
+import com.google.common.collect.Lists;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.tree.CommandNode;
 import net.opanel.annotation.Rewrite;
@@ -183,36 +184,65 @@ public class SpigotServer extends BaseBukkitServer implements OPanelServer, Code
     public HashMap<String, Object> getGamerules() {
         final World world = server.getWorlds().getFirst();
         HashMap<String, Object> gamerules = new HashMap<>();
-        for(String key : world.getGameRules()) {
-            GameRule<?> rule = GameRule.getByName(key);
-            if(rule == null) continue;
-            gamerules.put(key, world.getGameRuleValue(rule));
+        try {
+            // Paper changed GameRule from interface to class, causing
+            // IncompatibleClassChangeError on any direct method call.
+            // All GameRule interactions must go through reflection.
+            // The same as setGamerules()
+            Class<?> gameRuleClass = GameRule.class;
+            Method getNamespacedKey = gameRuleClass.getMethod("getKey");
+            Method getKey = NamespacedKey.class.getMethod("getKey");
+            Method getGameRuleValue = World.class.getMethod("getGameRuleValue", gameRuleClass);
+
+            for(Object rule : Lists.newArrayList(Registry.GAME_RULE)) {
+                try {
+                    Object key = getNamespacedKey.invoke(rule);
+                    if(key == null) continue;
+                    gamerules.put((String) getKey.invoke(key), getGameRuleValue.invoke(world, (GameRule<?>) rule));
+                } catch (Exception e) {
+                    //
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return gamerules;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void setGamerules(HashMap<String, Object> gamerules) {
         HashMap<String, Object> currentGamerules = getGamerules();
         runner.runTask(() -> {
             final World world = server.getWorlds().getFirst();
-            gamerules.forEach((key, value) -> {
-                if(value == null) return;
-                final Object currentValue = currentGamerules.get(key);
-                if(value.equals(currentValue)) return;
-                GameRule<?> rule = GameRule.getByName(key);
-                if(rule == null) return;
+            try {
+                Class<?> gameRuleClass = GameRule.class;
+                Method getByName = gameRuleClass.getMethod("getByName", String.class);
+                Method setGameRule = World.class.getMethod("setGameRule", gameRuleClass, Object.class);
 
-                if(rule.getType().equals(Boolean.class)) { // boolean
-                    world.setGameRule((GameRule<Boolean>) rule, (Boolean) value);
-                } else if(rule.getType().equals(Integer.class)) { // integer
-                    int n = ((Number) value).intValue();
-                    world.setGameRule((GameRule<Integer>) rule, n);
-                } else { // string
-                    sendServerCommand("gamerule "+ key +" "+ value);
-                }
-            });
+                gamerules.forEach((key, value) -> {
+                    if(value == null) return;
+                    final Object currentValue = currentGamerules.get(key);
+                    if(value.equals(currentValue)) return;
+
+                    try {
+                        Object rule = getByName.invoke(null, key);
+                        if(rule == null) return;
+
+                        if(value instanceof Boolean) {
+                            setGameRule.invoke(world, (GameRule<?>) rule, value);
+                        } else if(value instanceof Number) {
+                            int n = ((Number) value).intValue();
+                            setGameRule.invoke(world, (GameRule<?>) rule, n);
+                        } else {
+                            sendServerCommand("gamerule "+ key +" "+ value);
+                        }
+                    } catch (Exception e) {
+                        sendServerCommand("gamerule "+ key +" "+ value);
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
     }
 
