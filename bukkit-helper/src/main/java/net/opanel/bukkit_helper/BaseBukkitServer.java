@@ -11,6 +11,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -152,11 +153,13 @@ public abstract class BaseBukkitServer implements OPanelServer {
         // Get loaded plugins from Bukkit
         for(Plugin p : server.getPluginManager().getPlugins()) {
             PluginDescriptionFile desc = p.getDescription();
-            String fileName = URLDecoder.decode(p.getClass().getProtectionDomain().getCodeSource().getLocation().getPath(), StandardCharsets.UTF_8);
-            // Extract just the filename
-            fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
             
             try {
+                File pluginFile = new File(p.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
+                String fileName = pluginFile.toPath().toString();
+                // Extract just the filename
+                fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
+
                 long fileSize = Files.size(pluginsPath.resolve(fileName));
 
                 plugins.add(new OPanelPlugin(
@@ -172,8 +175,8 @@ public abstract class BaseBukkitServer implements OPanelServer {
                         true
                 ));
 
-                loadedPluginFileNames.add(fileName);
-            } catch (IOException e) {
+                loadedPluginFileNames.add(pluginFile.getName());
+            } catch (Exception e) {
                 //
             }
         }
