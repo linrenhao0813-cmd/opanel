@@ -23,7 +23,7 @@ public class SpigotOfflinePlayer extends BaseBukkitOfflinePlayer implements OPan
     @Override
     protected Path getPlayerDataPath() {
         String uuid = player.getUniqueId().toString();
-        Path path = server.getWorlds().getFirst().getWorldFolder().toPath().resolve("players/data/"+ uuid +".dat");
+        Path path = server.getWorlds().getFirst().getWorldFolder().toPath().resolve("../../../players/data/"+ uuid +".dat");
         if(!Files.exists(path)) {
             throw new NullPointerException("Player data file for UUID "+ uuid +" unavailable.");
         }
