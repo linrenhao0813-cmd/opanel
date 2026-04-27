@@ -13,8 +13,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -156,11 +154,8 @@ public abstract class BaseBukkitServer implements OPanelServer {
             
             try {
                 File pluginFile = new File(p.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
-                String fileName = pluginFile.toPath().toString();
-                // Extract just the filename
-                fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
-
-                long fileSize = Files.size(pluginsPath.resolve(fileName));
+                String fileName = pluginFile.getName();
+                long fileSize = Files.size(pluginFile.toPath());
 
                 plugins.add(new OPanelPlugin(
                         fileName,
@@ -175,7 +170,7 @@ public abstract class BaseBukkitServer implements OPanelServer {
                         true
                 ));
 
-                loadedPluginFileNames.add(pluginFile.getName());
+                loadedPluginFileNames.add(fileName);
             } catch (Exception e) {
                 //
             }
