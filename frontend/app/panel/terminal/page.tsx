@@ -38,6 +38,7 @@ export default function Terminal() {
   const argIndexRef = useRef(0);
   const [autocompleteList, setAutocompleteList] = useState<string[]>([]);
   const [historyList, setHistoryList] = useState<string[]>(getSettings("state.terminal.history"));
+  const historyIndexRef = useRef(historyList.length);
   const [logLevel, setLogLevel] = useState(defaultLogLevel);
   const [fullscreen, setFullscreen] = useState(false);
   const [shortcuts, setShortcuts] = useState<CommandShortcut[]>(getSettings("terminal.shortcuts"));
@@ -55,9 +56,10 @@ export default function Terminal() {
     client.send("command", command);
     argIndexRef.current = 0;
     setHistoryList((current) => [...current, command]);
+    historyIndexRef.current = historyList.length + 1;
     inputRef.current.value = "";
     inputRef.current?.focus();
-  }, [client]);
+  }, [client, historyList]);
 
   const handleKeydown = (e: KeyboardEvent) => {
     if(!inputRef.current || !client) return;
@@ -69,6 +71,22 @@ export default function Terminal() {
       case "Enter":
         handleSend();
         setAutocompleteList([]);
+        break;
+      case "ArrowUp":
+        if(e.defaultPrevented || historyList.length === 0) break;
+        e.preventDefault();
+        historyIndexRef.current = Math.max(0, historyIndexRef.current - 1);
+        elem.value = historyList[historyIndexRef.current];
+        break;
+      case "ArrowDown":
+        if(e.defaultPrevented || historyList.length === 0) break;
+        e.preventDefault();
+        historyIndexRef.current = Math.min(historyList.length, historyIndexRef.current + 1);
+        elem.value = (
+          historyIndexRef.current === historyList.length
+          ? ""
+          : historyList[historyIndexRef.current]
+        );
         break;
     }
   };

@@ -116,16 +116,18 @@ export function AutocompleteInput({
         complete();
         break;
       case "ArrowUp":
-        if(cSelected === null) return;
-        e.preventDefault();
-        const nextSelectedUp = (cSelected > 0) ? (cSelected - 1) : (advised.length - 1);
-        setSelected(nextSelectedUp);
+        if(cSelected !== null) {
+          e.preventDefault();
+          const nextSelectedUp = (cSelected > 0) ? (cSelected - 1) : (advised.length - 1);
+          setSelected(nextSelectedUp);
+        }
         break;
       case "ArrowDown":
-        if(cSelected === null) return;
-        e.preventDefault();
-        const nextSelectedDown = (cSelected < advised.length - 1) ? (cSelected + 1) : 0;
-        setSelected(nextSelectedDown);
+        if(cSelected !== null) {
+          e.preventDefault();
+          const nextSelectedDown = (cSelected < advised.length - 1) ? (cSelected + 1) : 0;
+          setSelected(nextSelectedDown);
+        }
         break;
     }
 
