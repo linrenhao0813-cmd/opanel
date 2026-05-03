@@ -3,7 +3,7 @@ plugins {
     id 'idea'
     id 'com.gradleup.shadow' version '8.3.8'
     id 'net.minecraftforge.gradle' version '[7.0.17,8)'
-    id 'net.minecraftforge.renamer' version '1.0.7'
+    id 'net.minecraftforge.renamer' version '1.0.17'
 }
 
 configurations {
@@ -73,8 +73,7 @@ shadowJar {
     configurations = [project.configurations.shadowImplementation]
 
     archiveBaseName.set(baseName +"-build")
-    archiveClassifier.set('')
-    destinationDirectory.set(file("../build/libs"))
+    archiveClassifier.set('dev')
 
     relocate 'com.google.gson', 'net.opanel.deps.gson'
     relocate 'org.objectweb.asm', 'net.opanel.deps.objectweb.asm'
@@ -86,10 +85,16 @@ shadowJar {
     exclude 'META-INF/*.RSA'
 }
 
+renamer.mappings.from minecraft.dependency.toSrgFile
+
+def reobfShadowJar = renamer.classes(tasks.named('shadowJar', Jar)) {
+    output = file("../build/libs/${baseName}-build-${rootProject.version}.jar")
+}
+
 idea.module { downloadJavadoc = downloadSources = true }
 
 build {
-    dependsOn shadowJar
+    dependsOn reobfShadowJar
 }
 
 sourceSets.each {
