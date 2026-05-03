@@ -121,7 +121,7 @@ export function InterfaceRequest({
       <MonacoEditor
         defaultLanguage="typescript"
         value={def}
-        theme={theme === "dark" ? "vs-dark" : "vs"}
+        theme={theme === "dark" ? "opanel-theme-dark-default" : "opanel-theme"}
         options={{
           minimap: { enabled: false },
           lineNumbers: "off",
@@ -156,7 +156,7 @@ export function InterfaceResponse({
       <MonacoEditor
         defaultLanguage="typescript"
         value={def}
-        theme={theme === "dark" ? "vs-dark" : "vs"}
+        theme={theme === "dark" ? "opanel-theme-dark-default" : "opanel-theme"}
         options={{
           minimap: { enabled: false },
           lineNumbers: "off",

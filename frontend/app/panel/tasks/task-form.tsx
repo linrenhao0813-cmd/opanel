@@ -305,7 +305,7 @@ export function TaskForm({
                 <MonacoEditor
                   defaultLanguage="txt"
                   value={field.value.join("\n")}
-                  theme={theme === "dark" ? "opanel-theme-dark" : "opanel-theme"}
+                  theme={theme === "dark" ? "opanel-theme-dark-default" : "opanel-theme"}
                   options={{
                     minimap: {
                       enabled: false

@@ -78,7 +78,7 @@ export function LaunchCommandDialog({
           <MonacoEditor
             defaultLanguage="txt"
             value={launchCommand}
-            theme={theme === "dark" ? "vs-dark" : "vs"}
+            theme={theme === "dark" ? "opanel-theme-dark" : "opanel-theme"}
             options={{
               minimap: { enabled: false },
               automaticLayout: true,

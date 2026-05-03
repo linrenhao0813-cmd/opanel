@@ -10,14 +10,26 @@ monaco.editor.defineTheme("opanel-theme", {
   inherit: true,
   rules: [],
   colors: {
-    "editor.background": "#FFFFFF"
+    "editor.background": "#FFFFFF",
+    "editor.selectionBackground": "#d9d9d9ee",
   }
 });
 monaco.editor.defineTheme("opanel-theme-dark", {
   base: "vs-dark",
   inherit: true,
   rules: [],
-  colors: {}
+  colors: {
+    "editor.background": "#0a0a0a",
+    "editor.selectionBackground": "#3b3b3bee",
+  }
+});
+monaco.editor.defineTheme("opanel-theme-dark-default", {
+  base: "vs-dark",
+  inherit: true,
+  rules: [],
+  colors: {
+    "editor.selectionBackground": "#3b3b3bee",
+  }
 });
 
 // server-log language support
@@ -56,7 +68,8 @@ monaco.editor.defineTheme("server-log-theme", {
     { token: "log.stacktrace.cause", foreground: "E00000", fontStyle: "bold" },
   ],
   colors: {
-    "editor.background": "#FFFFFF"
+    "editor.background": "#FFFFFF",
+    "editor.selectionBackground": "#d9d9d9ee",
   }
 });
 monaco.editor.defineTheme("server-log-theme-dark", {
@@ -72,7 +85,8 @@ monaco.editor.defineTheme("server-log-theme-dark", {
     { token: "log.stacktrace.cause", foreground: "DD6A6F", fontStyle: "bold" },
   ],
   colors: {
-    "editor.background": "#000000"
+    "editor.background": "#0a0a0a",
+    "editor.selectionBackground": "#3b3b3bee",
   }
 });
 
