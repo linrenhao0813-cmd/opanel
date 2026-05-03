@@ -15,6 +15,7 @@ import { Button } from "./ui/button";
 import { googleSansCode } from "@/lib/fonts";
 import { usePrevious } from "@/hooks/use-previous";
 import { InputGroup, InputGroupButton, InputGroupInput } from "./ui/input-group";
+import { useKeydown } from "@/hooks/use-keydown";
 
 function AutocompleteItem({
   name,
@@ -193,6 +194,10 @@ export function AutocompleteInput({
       selectedItem.scrollIntoView({ block: "nearest" });
     }
   }, [selected]);
+
+  useKeydown("a", { ctrl: true }, () => {
+    inputRef.current?.select();
+  });
 
   return (
     <InputContext.Provider value={{
