@@ -64,7 +64,7 @@ export function ItemDialog({
         <div className="flex flex-col gap-2">
           <div className="h-[500px] border rounded-md flex overflow-hidden">
             <MonacoEditor
-              language="json"
+              language="python"
               value={value}
               theme={theme === "dark" ? "opanel-theme-dark" : "opanel-theme"}
               options={{
