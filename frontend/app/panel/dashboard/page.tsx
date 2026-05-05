@@ -1,11 +1,11 @@
 "use client";
 
 import type { APIResponse, InfoResponse, MonitorResponse } from "@/lib/types";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Gauge } from "lucide-react";
-import { InfoContext, MonitorContext } from "@/contexts/api-context";
+import { InfoContext, MonitorContext, VersionContext } from "@/contexts/api-context";
 import { sendGetRequest, toastError } from "@/lib/api";
-import { getCurrentState } from "@/lib/utils";
+import { cn, getCurrentState } from "@/lib/utils";
 import { InfoCard } from "./info-card";
 import { TimeCard } from "./time-card";
 import { PlayersCard } from "./players-card";
@@ -17,10 +17,18 @@ import { emitter } from "@/lib/emitter";
 import { getSettings } from "@/lib/settings";
 import { $ } from "@/lib/i18n";
 import { SystemCard } from "./system-card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const requestMonitorInterval = getSettings("dashboard.monitor-interval");
 
+function CardSkeleton({ className }: { className?: string }) {
+  return (
+    <Skeleton className={cn("rounded-sm bg-background", className)}/>
+  );
+}
+
 export default function Dashboard() {
+  const versionCtx = useContext(VersionContext);
   const [info, setInfo] = useState<APIResponse<InfoResponse>>();
   const [monitorData, setMonitorData] = useState(
     new Array<MonitorResponse>(50).fill({ cpu: 0, memory: 0, tps: 20 })
@@ -73,25 +81,53 @@ export default function Dashboard() {
           {/* Left side */}
           <div className="flex-2 flex flex-col gap-2">
             {/* Upper */}
-            <InfoCard className="row-start-1 col-span-2"/>
+            {
+              info && versionCtx
+              ? <InfoCard className="row-start-1 col-span-2"/>
+              : <CardSkeleton className="row-start-1 col-span-2 min-lg:min-h-36 min-lg:max-h-36"/>
+            }
 
             {/* Center */}
             <div className="flex-1 min-h-0 flex max-lg:flex-col gap-2 *:flex-1">
-              <PlayersCard className="row-span-3"/>
-              <MonitorCard className="row-span-3"/>
+              {
+                info
+                ? <PlayersCard className="row-span-3"/>
+                : <CardSkeleton className="row-span-3"/>
+              }
+              {
+                info
+                ? <MonitorCard className="row-span-3"/>
+                : <CardSkeleton className="row-span-3"/>
+              }
             </div>
 
             {/* Lower */}
             <div className="min-lg:h-36 flex max-lg:flex-col gap-2 *:flex-1">
-              <TimeCard />
-              <TPSCard />
+              {
+                info
+                ? <TimeCard />
+                : <CardSkeleton />
+              }
+              {
+                info
+                ? <TPSCard />
+                : <CardSkeleton />
+              }
             </div>
           </div>
 
           {/* Right side */}
           <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2 min-xl:overflow-hidden">
-            <SystemCard />
-            <TerminalCard className="flex-1 min-h-0 max-xl:min-h-128"/>
+            {
+              info
+              ? <SystemCard />
+              : <CardSkeleton className="h-72"/>
+            }
+            {
+              info
+              ? <TerminalCard className="flex-1 min-h-0 max-xl:min-h-128"/>
+              : <CardSkeleton className="flex-1 min-h-0 max-xl:min-h-128"/>
+            }
           </div>
         </MonitorContext.Provider>
       </InfoContext.Provider>

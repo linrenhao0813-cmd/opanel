@@ -42,14 +42,14 @@ export default function PanelLayout({
   useKeydown("p", { ctrl: true }, (e) => e.preventDefault());
   useKeydown("s", { ctrl: true }, (e) => e.preventDefault());
 
-  if(!mounted) return <></>;
+  // if(!mounted) return <></>;
 
   return (
     <SidebarProvider className="overflow-hidden">
       <VersionContext value={versionInfo}>
         <AppSidebar />
-        <SidebarInset className="min-w-0">
-          {children}
+        <SidebarInset className="min-w-0" suppressHydrationWarning>
+          {mounted ? children : <></>}
         </SidebarInset>
       </VersionContext>
     </SidebarProvider>

@@ -100,8 +100,6 @@ export function AppSidebar() {
   const pathname = usePathname();
   const versionCtx = useContext(VersionContext);
 
-  if(!versionCtx) return <></>;
-
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="h-12 pl-4 bg-background border-b border-b-sidebar-border flex flex-row items-center gap-0 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:pt-3 group-data-[state=collapsed]:pl-2">
@@ -133,7 +131,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>{$("sidebar.management")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {managementGroupItems.map((item, i) => (!item.minVersion || (item.minVersion && compare(versionCtx?.version, item.minVersion) >= 0)) && (
+              {managementGroupItems.map((item, i) => (!item.minVersion || (versionCtx && compare(versionCtx.version, item.minVersion) >= 0)) && (
                 <SidebarMenuItem key={i}>
                   <SidebarMenuButton
                     isActive={pathname.startsWith(item.url)}
@@ -154,7 +152,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {configurationGroupItems.map((item, i) => (
-                (item.url === "/panel/bukkit-config" && !isBukkit(versionCtx.serverType))
+                (item.url === "/panel/bukkit-config" && (!versionCtx || !isBukkit(versionCtx.serverType)))
                 ? <Fragment key={i}/>
                 : (
                   <SidebarMenuItem key={i}>
