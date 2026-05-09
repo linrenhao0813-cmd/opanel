@@ -67,4 +67,4 @@ OPanel 的功能包括：
 
 ## License
 
-[MPL-2.0](./LICENSE)
+[GPL-3.0](./LICENSE)

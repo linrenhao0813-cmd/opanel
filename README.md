@@ -67,4 +67,4 @@ See [Contributing Guidelines](https://opanel.cn/docs/contributing.html) for more
 
 ## License
 
-[MPL-2.0](./LICENSE)
+[GPL-3.0](./LICENSE)
