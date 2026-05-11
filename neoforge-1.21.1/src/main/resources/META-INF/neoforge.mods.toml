@@ -1,6 +1,6 @@
 modLoader="javafml"
 loaderVersion="[1,)"
-license="MPL-2.0"
+license="GPL-3.0"
 issueTrackerURL="https://github.com/opanel-mc/opanel/issues"
 [[mods]]
 modId="opanel"

@@ -12,7 +12,7 @@ public class Constants {
             .append("§r§7Author: §rNriotHrreion\n")
             .append("§r§7Website: §r§nhttps://opanel.cn\n")
             .append("§r§7Source Code: §r§nhttps://github.com/opanel-mc/opanel\n")
-            .append("§r§7License: §cMPL-2.0\n")
+            .append("§r§7License: §cGPL-3.0\n")
             .append("§8===========================================")
             .toString();
 

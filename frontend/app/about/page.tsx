@@ -50,7 +50,7 @@ const info = [
   },
   {
     name: $("about.info.license"),
-    value: <a href="https://raw.githubusercontent.com/opanel-mc/opanel/refs/heads/main/LICENSE" target="_blank" rel="noopener noreferrer">MPL-2.0</a>,
+    value: <a href="https://raw.githubusercontent.com/opanel-mc/opanel/refs/heads/main/LICENSE" target="_blank" rel="noopener noreferrer">GPL-3.0</a>,
     icon: FileText
   }
 ];
