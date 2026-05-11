@@ -13,7 +13,9 @@
     "lint": "next lint",
     "bundle": "node scripts/bundle",
     "prelaunch": "node scripts/prelaunch",
-    "force-prelaunch": "node scripts/prelaunch force"
+    "force-prelaunch": "node scripts/prelaunch force",
+    "wasm:build": "node scripts/build-wasm",
+    "wasm:build:force": "node scripts/build-wasm force"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
@@ -87,6 +89,7 @@
     "tw-animate-css": "^1.3.4",
     "typescript": "^5",
     "vitest": "^4.1.2",
+    "wasm-pack": "^0.14.0",
     "yauzl": "^3.3.0"
   }
 }

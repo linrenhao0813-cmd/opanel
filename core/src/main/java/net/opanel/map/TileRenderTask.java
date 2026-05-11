@@ -6,6 +6,8 @@ import net.opanel.utils.AnvilUtility;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,22 +15,38 @@ import java.util.List;
 public class TileRenderTask implements Runnable {
     private static final int DATA_MAGIC_NUM = 0x4f4d4150; // OMAP (4 bytes offset)
 
+    private final OPanel plugin;
+    private final String saveName;
     private final OPanelWorldRegion region;
     private final List<Tile> tiles;
 
-    public TileRenderTask(OPanelWorldRegion region) {
+    public TileRenderTask(OPanel plugin, String saveName, OPanelWorldRegion region) {
+        this.plugin = plugin;
+        this.saveName = saveName;
         this.region = region;
-        tiles = region.getChunkTiles();
+        tiles = new ArrayList<>();
     }
 
-    public TileRenderTask(OPanelWorldRegion region, Tile tile) {
+    public TileRenderTask(OPanel plugin, String saveName, OPanelWorldRegion region, Tile tile) {
+        this.plugin = plugin;
+        this.saveName = saveName;
         this.region = region;
         tiles = List.of(tile);
     }
 
     @Override
     public void run() {
+        plugin.logger.info("Start pre-rendering "+ region.getPath());
+        tiles.addAll(region.getChunkTiles());
+
         String regionFileName = region.getPath().getFileName().toString();
+        Path saveDir = OPanel.MAP_DATA_PATH.resolve(saveName);
+        try {
+            Files.createDirectories(saveDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
 
         for(Tile tile : tiles) {
             final int[] pos;
@@ -38,12 +56,14 @@ public class TileRenderTask implements Runnable {
                 continue;
             }
 
-            try(FileOutputStream fos = new FileOutputStream(OPanel.MAP_DATA_PATH.resolve(pos[0] +"."+ pos[1] +".omap").toFile())) {
+            try(FileOutputStream fos = new FileOutputStream(saveDir.resolve(pos[0] +"."+ pos[1] +".omap").toFile())) {
                 compressTileToStream(tile, fos);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+
+        plugin.logger.info("Finished pre-rendering "+ region.getPath());
     }
 
     private void compressTileToStream(Tile tile, OutputStream stream) throws IOException {

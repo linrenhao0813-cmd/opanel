@@ -20,6 +20,10 @@
 # production
 /build
 
+# wasm-lib build output
+/wasm-lib/pkg
+/wasm-lib/target
+
 # misc
 .DS_Store
 *.pem

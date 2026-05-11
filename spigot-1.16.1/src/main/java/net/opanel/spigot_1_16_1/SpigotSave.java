@@ -26,7 +26,7 @@ public class SpigotSave extends BaseBukkitSave implements OPanelSave {
 
         try(Stream<Path> stream = Files.list(regionFolderPath)) {
             stream.filter(path -> (
-                            !path.toString().endsWith(".mca")
+                            path.toString().endsWith(".mca")
                             && path.toFile().isFile()
                     ))
                     .map(Path::toAbsolutePath)

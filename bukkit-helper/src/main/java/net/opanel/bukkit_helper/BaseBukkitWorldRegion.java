@@ -7,6 +7,7 @@ import net.opanel.common.OPanelWorldRegion;
 import net.opanel.map.Tile;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,6 +17,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 import java.util.zip.InflaterInputStream;
 
 public abstract class BaseBukkitWorldRegion implements OPanelWorldRegion {
@@ -43,10 +45,14 @@ public abstract class BaseBukkitWorldRegion implements OPanelWorldRegion {
 
     /**
      * Read the chunk at ({@code chunkX}, {@code chunkZ}) from this MCA region file
-     * and return its decompressed NBT bytes as an InputStream that Item-NBT-API can parse.
+     * and return its NBT bytes wrapped in a GZIP stream so Item-NBT-API can parse
+     * them. NBT-API's `readNBT` only accepts GZIP-compressed input, while .mca
+     * chunks are typically Zlib-compressed; we decompress with the right scheme
+     * here and re-wrap in GZIP for the caller. Cost is negligible compared to
+     * the NBT parse itself.
      * Must be called while {@link #raf} is open (i.e. from within {@link #getChunkTiles()}).
      *
-     * @return decompressed NBT InputStream, or {@code null} if the chunk is absent
+     * @return GZIP-wrapped NBT InputStream, or {@code null} if the chunk is absent
      */
     protected final InputStream readChunkNBT(int chunkX, int chunkZ) throws IOException {
         if(raf == null) return null;
@@ -92,7 +98,16 @@ public abstract class BaseBukkitWorldRegion implements OPanelWorldRegion {
             raf.readFully(data);
         }
 
-        return decompress(new ByteArrayInputStream(data), compressionScheme);
+        byte[] rawNbt;
+        try(InputStream decompressed = decompress(new ByteArrayInputStream(data), compressionScheme)) {
+            rawNbt = decompressed.readAllBytes();
+        }
+
+        ByteArrayOutputStream gzipped = new ByteArrayOutputStream(rawNbt.length);
+        try(GZIPOutputStream gzipOut = new GZIPOutputStream(gzipped)) {
+            gzipOut.write(rawNbt);
+        }
+        return new ByteArrayInputStream(gzipped.toByteArray());
     }
 
     private InputStream decompress(InputStream raw, int compressionScheme) throws IOException {

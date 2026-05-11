@@ -61,9 +61,6 @@ public class OPanel {
 
         // Initialize map renderer
         mapRenderManager = new MapRenderManager(this);
-        if(!mapRenderManager.hasRenderedTiles()) {
-            mapRenderManager.renderAll();
-        }
 
         // Initialize inventory poller
         OPanelPlayerInventoryChangeEvent.registerPoller(this);

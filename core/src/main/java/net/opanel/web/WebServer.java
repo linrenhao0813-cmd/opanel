@@ -19,6 +19,7 @@ import net.opanel.controller.openapi.OpenPluginsController;
 import net.opanel.endpoint.InventoryEndpoint;
 import net.opanel.endpoint.PlayersEndpoint;
 import net.opanel.endpoint.TerminalEndpoint;
+import net.opanel.map.MapRenderManager;
 
 import java.util.HashMap;
 
@@ -174,7 +175,12 @@ public class WebServer {
                 delete("/", logsController.clearLogs);
                 delete("{fileName}", logsController.deleteLog);
             });
-            get("map/tile/{x}/{z}", mapController.getTile);
+            path("map", () -> {
+                path("tile", () -> {
+                    get("{saveName}", mapController.getAvailableTiles);
+                    get("{saveName}/{x}/{z}", mapController.getTile);
+                });
+            });
             get("monitor", monitorController.getMonitor);
             path("players", () -> {
                 get("/", playersController.getPlayersOverview);

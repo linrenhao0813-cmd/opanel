@@ -1,7 +1,7 @@
 package net.opanel.utils;
 
 public class AnvilUtility {
-    public static int[] decodeBitpacked(long[] packed, int bitsPerValue) {
+    public static int[] bitunpack(long[] packed, int bitsPerValue) {
         final int valueAmount = Long.SIZE / bitsPerValue;
         final long mask = (1L << bitsPerValue) - 1;
 

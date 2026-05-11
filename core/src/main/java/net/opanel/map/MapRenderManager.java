@@ -5,22 +5,32 @@ import net.opanel.common.OPanelSave;
 import net.opanel.common.OPanelWorldRegion;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class MapRenderManager {
+    private final OPanel plugin;
     private final ExecutorService executor = Executors.newFixedThreadPool(
         Runtime.getRuntime().availableProcessors()
     );
-    private final List<OPanelWorldRegion> regionsToRender = new ArrayList<>();
+    private final Map<String, List<OPanelWorldRegion>> saveRegionMap = new HashMap<>();
 
     public MapRenderManager(OPanel plugin) {
+        this.plugin = plugin;
+    }
+
+    public void init() {
         for(OPanelSave save : plugin.getServer().getSaves()) {
             if(!save.isRunning()) continue; // skip the saves that is not running on the server
-            regionsToRender.addAll(save.getRegions());
+            saveRegionMap.put(save.getName(), save.getRegions());
+        }
+
+        if(!hasRenderedTiles()) {
+            renderAll();
         }
     }
 
@@ -30,13 +40,15 @@ public class MapRenderManager {
     }
 
     public void renderAll() {
-        for(OPanelWorldRegion region : regionsToRender) {
-            executor.submit(new TileRenderTask(region));
+        for(Map.Entry<String, List<OPanelWorldRegion>> entry : saveRegionMap.entrySet()) {
+            for(OPanelWorldRegion region : entry.getValue()) {
+                executor.execute(new TileRenderTask(plugin, entry.getKey(), region));
+            }
         }
     }
 
-    public Future<?> renderTile(OPanelWorldRegion region, Tile tile) {
-        return executor.submit(new TileRenderTask(region, tile));
+    public Future<?> renderTile(String saveName, OPanelWorldRegion region, Tile tile) {
+        return executor.submit(new TileRenderTask(plugin, saveName, region, tile));
     }
 
     public void shutdown() {

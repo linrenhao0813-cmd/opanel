@@ -54,7 +54,7 @@ public class Tile {
             this.sections.put(section.getY(), section);
         }
 
-        heightMap = AnvilUtility.decodeBitpacked(packedHeightMap, 9);
+        heightMap = AnvilUtility.bitunpack(packedHeightMap, 9);
         minY = afterCavesCliffs ? -64 : 0;
     }
 
@@ -105,7 +105,7 @@ public class Tile {
         return new Section(
             y,
             palette,
-            AnvilUtility.decodeBitpacked(packedBlockStates, AnvilUtility.paletteSizeToBitsSize(paletteSize))
+            AnvilUtility.bitunpack(packedBlockStates, AnvilUtility.paletteSizeToBitsSize(paletteSize))
         );
     }
 }

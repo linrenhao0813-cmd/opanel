@@ -6,6 +6,7 @@ import net.opanel.bukkit_helper.TaskRunner;
 import net.opanel.bukkit_helper.command.OPanelCommand;
 import net.opanel.bukkit_helper.config.ConfigManagerImpl;
 import net.opanel.common.Constants;
+import net.opanel.map.MapRenderManager;
 import net.opanel.spigot_1_16_1.terminal.LogListenerManagerImpl;
 import org.apache.logging.log4j.LogManager;
 import org.bstats.bukkit.Metrics;
@@ -99,6 +100,7 @@ public class Main extends JavaPlugin implements Listener, TaskRunner {
 
         try {
             instance.getWebServer().start(); // default port 3000
+            instance.getMapRenderManager().init();
         } catch (Exception e) {
             e.printStackTrace();
         }

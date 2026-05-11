@@ -40,6 +40,7 @@ function createMockTerminalClient() {
 
 function createLog(i: number): ConsoleLog {
   return {
+    mcdr: false,
     time: Date.now() + i,
     level: "INFO",
     thread: "Server thread",
