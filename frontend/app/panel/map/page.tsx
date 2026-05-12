@@ -13,7 +13,7 @@ export default function ServerMap() {
       title="地图"
       showHeader={false}
       className="bg-background p-0">
-      <div className="w-full h-full bg-white shadow-[inset_0px_0px_20px_4px_rgba(0,0,0,0.28)]">
+      <div className="w-full h-full shadow-[inset_0px_0px_20px_4px_rgba(0,0,0,0.28)]">
         <MapCanvas />
       </div>
     </SubPage>

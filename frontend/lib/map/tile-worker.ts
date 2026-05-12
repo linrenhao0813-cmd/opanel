@@ -10,6 +10,7 @@ import {
 import { fetchAvailableTiles, fetchTile } from "./tile-fetch";
 
 const TILE_BLOCKS = 16;
+const BASE_COLOR = "#222";
 
 let canvas: OffscreenCanvas | null = null;
 let ctx: OffscreenCanvasRenderingContext2D | null = null;
@@ -48,6 +49,11 @@ function drawSingleTile(viewport: ViewportMessage, x: number, z: number, bitmap:
   const y0 = Math.round(originY + z * tilePx);
   const x1 = Math.round(originX + (x + 1) * tilePx);
   const y1 = Math.round(originY + (z + 1) * tilePx);
+
+  // Provide a base color for the tile image
+  ctx.fillStyle = BASE_COLOR;
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+
   ctx.drawImage(bitmap, x0, y0, x1 - x0, y1 - y0);
 }
 
