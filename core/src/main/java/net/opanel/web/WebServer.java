@@ -176,10 +176,8 @@ public class WebServer {
                 delete("{fileName}", logsController.deleteLog);
             });
             path("map", () -> {
-                path("tile", () -> {
-                    get("{saveName}", mapController.getAvailableTiles);
-                    get("{saveName}/{x}/{z}", mapController.getTile);
-                });
+                get("{saveName}", mapController.getAvailableTiles);
+                get("{saveName}/tiles", mapController.getTiles);
             });
             get("monitor", monitorController.getMonitor);
             path("players", () -> {

@@ -5,9 +5,9 @@ import type {
 import {
   initSync,
   init_panic_hook,
-  render_tile_rgba,
+  render_tile_bundle_rgba,
 } from "@/wasm-lib/pkg/wasm_lib.js";
-import { fetchAvailableTiles, fetchTile } from "./tile-fetch";
+import { fetchAvailableTiles, fetchTilesInRange } from "./tile-fetch";
 
 const TILE_BLOCKS = 16;
 const BASE_COLOR = "#222";
@@ -20,9 +20,14 @@ let availableTiles: [number, number][] = [];
 
 const tileCache = new Map<string, ImageBitmap>();
 const inflight = new Set<string>();
+const inflightBundles = new Set<string>();
 
-function cacheKey(save: string, x: number, z: number): string {
+function getCacheKey(save: string, x: number, z: number): string {
   return `${save}/${x}.${z}`;
+}
+
+function getBundleKey(save: string, xMin: number, zMin: number, xMax: number, zMax: number): string {
+  return `${save}:${xMin},${zMin},${xMax},${zMax}`;
 }
 
 function inBounds(viewport: ViewportMessage, x: number, z: number): boolean {
@@ -59,7 +64,7 @@ function drawSingleTile(viewport: ViewportMessage, x: number, z: number, bitmap:
 
 function renderViewport(viewport: ViewportMessage): void {
   if(!canvas || !ctx) return;
-  
+
   let resized = false;
   if(canvas.width !== viewport.viewportPx.width) {
     canvas.width = viewport.viewportPx.width;
@@ -75,41 +80,65 @@ function renderViewport(viewport: ViewportMessage): void {
 
   for(let z = viewport.tileBounds.zMin; z <= viewport.tileBounds.zMax; z++) {
     for(let x = viewport.tileBounds.xMin; x <= viewport.tileBounds.xMax; x++) {
-      const key = cacheKey(saveName, x, z);
+      const key = getCacheKey(saveName, x, z);
       const bitmap = tileCache.get(key);
-      if(bitmap) {
-        drawSingleTile(viewport, x, z, bitmap);
-      } else {
-        scheduleFetch(saveName, x, z);
-      }
+      if(bitmap) drawSingleTile(viewport, x, z, bitmap);
     }
   }
+
+  if(!viewport.interactive) scheduleFetchRange(saveName, viewport);
 }
 
-async function scheduleFetch(save: string, x: number, z: number): Promise<void> {
-  if(!availableTiles.some(([tx, tz]) => tx === x && tz === z)) return;
+async function scheduleFetchRange(save: string, viewport: ViewportMessage): Promise<void> {
+  const { xMin, xMax, zMin, zMax } = viewport.tileBounds;
 
-  const key = cacheKey(save, x, z);
-  if(inflight.has(key) || tileCache.has(key)) return;
-  inflight.add(key);
+  const pendingKeys: string[] = [];
+  for(let z = zMin; z <= zMax; z++) {
+    for(let x = xMin; x <= xMax; x++) {
+      const key = getCacheKey(save, x, z);
+      if(tileCache.has(key) || inflight.has(key)) continue;
+      if(!availableTiles.some(([tx, tz]) => tx === x && tz === z)) continue;
+
+      pendingKeys.push(key);
+    }
+  }
+  if(pendingKeys.length === 0) return;
+
+  const bKey = getBundleKey(save, xMin, zMin, xMax, zMax);
+  if(inflightBundles.has(bKey)) return;
+  
+  inflightBundles.add(bKey);
+  for(const k of pendingKeys) {
+    inflight.add(k);
+  }
 
   try {
-    const bytes = await fetchTile(save, x, z);
+    const bytes = await fetchTilesInRange(save, xMin, zMin, xMax, zMax);
     if(!bytes) return;
 
-    const rgba = render_tile_rgba(new Uint8Array(bytes));
-    const clamped = new Uint8ClampedArray(rgba);
-    const imageData = new ImageData(clamped, TILE_BLOCKS, TILE_BLOCKS);
-    const bitmap = await createImageBitmap(imageData);
+    const bundle = render_tile_bundle_rgba(new Uint8Array(bytes));
+    const count = bundle.len();
+    for(let i = 0; i < count; i++) {
+      const x = bundle.x_at(i);
+      const z = bundle.z_at(i);
+      const key = getCacheKey(save, x, z);
+      if(tileCache.has(key)) continue;
 
-    tileCache.set(key, bitmap);
-    if(currentViewport && save === saveName && inBounds(currentViewport, x, z)) {
-      drawSingleTile(currentViewport, x, z, bitmap);
+      const rgba = bundle.rgba_at(i);
+      const clamped = new Uint8ClampedArray(rgba);
+      const imageData = new ImageData(clamped, TILE_BLOCKS, TILE_BLOCKS);
+      const bitmap = await createImageBitmap(imageData);
+
+      tileCache.set(key, bitmap);
+      if(currentViewport && save === saveName && inBounds(currentViewport, x, z)) {
+        drawSingleTile(currentViewport, x, z, bitmap);
+      }
     }
   } catch {
     //
   } finally {
-    inflight.delete(key);
+    for(const k of pendingKeys) inflight.delete(k);
+    inflightBundles.delete(bKey);
   }
 }
 

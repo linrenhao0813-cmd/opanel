@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class TileRenderTask implements Runnable {
-    private static final int DATA_MAGIC_NUM = 0x4f4d4150; // OMAP (4 bytes offset)
+    private static final byte[] DATA_MAGIC = "OMAP".getBytes(StandardCharsets.US_ASCII);
 
     private final OPanel plugin;
     private final String saveName;
@@ -97,7 +97,7 @@ public class TileRenderTask implements Runnable {
 
         // start writing to output stream
         DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(stream));
-        dos.writeInt(DATA_MAGIC_NUM);
+        dos.write(DATA_MAGIC);
 
         // write palette part
         dos.writeShort(palette.size());

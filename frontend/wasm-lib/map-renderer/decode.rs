@@ -6,6 +6,7 @@ pub const TILE_SIDE: usize = 16;
 pub const TILE_BLOCKS: usize = TILE_SIDE * TILE_SIDE;
 
 const MAGIC: [u8; 4] = *b"OMAP";
+const BUNDLE_MAGIC: [u8; 5] = *b"OOMAP";
 const HEIGHT_BITS: u32 = 9;
 
 #[derive(Debug)]
@@ -21,6 +22,34 @@ pub struct DecodedTile {
     pub palette: Vec<String>,
     pub blocks: [u16; TILE_BLOCKS],
     pub heights: [u16; TILE_BLOCKS],
+}
+
+#[derive(Debug)]
+pub struct DecodedBundleEntry {
+    pub x: i32,
+    pub z: i32,
+    pub tile: DecodedTile,
+}
+
+pub fn decode_bundle(bytes: &[u8]) -> Result<Vec<DecodedBundleEntry>, DecodeError> {
+    let mut cur = Cursor::new(bytes);
+
+    if cur.read_array::<5>()? != BUNDLE_MAGIC {
+        return Err(DecodeError::BadMagic);
+    }
+
+    let tile_count = cur.read_u32()? as usize;
+    let mut entries = Vec::with_capacity(tile_count);
+    for _ in 0..tile_count {
+        let x = cur.read_i32()?;
+        let z = cur.read_i32()?;
+        let omap_len = cur.read_u32()? as usize;
+        let omap_bytes = cur.read_slice(omap_len)?;
+        let tile = decode(omap_bytes)?;
+        entries.push(DecodedBundleEntry { x, z, tile });
+    }
+
+    Ok(entries)
 }
 
 pub fn decode(bytes: &[u8]) -> Result<DecodedTile, DecodeError> {
@@ -91,6 +120,14 @@ impl<'a> Cursor<'a> {
 
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
         Ok(u16::from_be_bytes(self.read_array::<2>()?))
+    }
+
+    fn read_u32(&mut self) -> Result<u32, DecodeError> {
+        Ok(u32::from_be_bytes(self.read_array::<4>()?))
+    }
+
+    fn read_i32(&mut self) -> Result<i32, DecodeError> {
+        Ok(i32::from_be_bytes(self.read_array::<4>()?))
     }
 
     fn read_u64(&mut self) -> Result<u64, DecodeError> {

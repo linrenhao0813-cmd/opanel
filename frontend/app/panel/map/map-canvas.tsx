@@ -43,14 +43,16 @@ export function MapCanvas() {
     const tilePx = zoomRef.current * TILE_BLOCKS;
     cameraRef.current.x -= dx / tilePx;
     cameraRef.current.z -= dy / tilePx;
-    postViewport();
+    postViewport({ interactive: true });
   };
 
   const handlePointerEnd = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const wasDragging = dragRef.current.active;
     dragRef.current.active = false;
     if(e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
+    if(wasDragging) postViewport();
   };
 
   const handleWheel = (e: ReactWheelEvent<HTMLDivElement>) => {

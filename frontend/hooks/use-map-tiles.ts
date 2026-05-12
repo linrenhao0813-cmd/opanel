@@ -14,8 +14,12 @@ export interface UseMapTilesResult {
   zoomRef: React.RefObject<number>;
   /** Canvas size in CSS pixels (kept in sync via ResizeObserver). */
   viewportRef: React.RefObject<{ width: number, height: number }>;
-  /** Schedule a viewport postMessage to the worker, coalesced via rAF. */
-  postViewport: () => void;
+  /**
+   * Schedule a viewport postMessage to the worker, coalesced via rAF.
+   * Pass `{ interactive: true }` during drag to make the worker skip fetches
+   * until the next non-interactive call.
+   */
+  postViewport: (opts?: { interactive?: boolean }) => void;
   /** Update viewport size and trigger a viewport postMessage. */
   setViewportSize: (width: number, height: number) => void;
 }
@@ -32,13 +36,16 @@ export function useMapTiles({ onMessage }: UseMapTilesOptions): UseMapTilesResul
   const viewportRef = useRef({ width: 0, height: 0 });
   const generationRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const interactiveRef = useRef(false);
   const onMessageRef = useRef(onMessage);
 
   useEffect(() => {
     onMessageRef.current = onMessage;
   }, [onMessage]);
 
-  const postViewport = useCallback(() => {
+  const postViewport = useCallback((opts?: { interactive?: boolean }) => {
+    interactiveRef.current = opts?.interactive ?? false;
+
     if(rafRef.current !== null) return;
 
     rafRef.current = requestAnimationFrame(() => {
@@ -64,6 +71,7 @@ export function useMapTiles({ onMessage }: UseMapTilesOptions): UseMapTilesResul
           zMin: Math.floor(cameraRef.current.z - halfH),
           zMax: Math.ceil(cameraRef.current.z + halfH),
         },
+        interactive: interactiveRef.current,
       };
       onMessageRef.current(msg);
     });

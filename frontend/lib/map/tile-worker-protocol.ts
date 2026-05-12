@@ -25,6 +25,12 @@ export interface ViewportMessage {
     zMin: number
     zMax: number
   }
+  /**
+   * True while the user is mid-interaction (e.g. dragging). The worker redraws
+   * cached tiles but skips issuing fetches. A final `interactive=false`
+   * message at drag end triggers the actual fetch.
+   */
+  interactive: boolean
 }
 
 export type MainToWorker = InitMessage | SetSaveMessage | ViewportMessage;
