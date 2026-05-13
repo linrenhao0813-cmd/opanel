@@ -3,7 +3,8 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const argv = process.argv.slice(2);
-const FORCE = argv[0] === "force";
+const FORCE = argv.includes("--force") || argv.includes("-f");
+const RUN_DIRECTLY = argv.includes("--run");
 
 const root = path.resolve(__dirname, "..");
 const crateDir = path.join(root, "wasm-lib");
@@ -45,19 +46,27 @@ function shouldRebuild() {
   return newestMtimeIn(crateDir) > wasmMtime;
 }
 
-if(shouldRebuild()) {
-  ensureWasmPack();
-  console.log("Building wasm-lib...");
+function buildWasm() {
+  if(shouldRebuild()) {
+    ensureWasmPack();
+    console.log("Building wasm-lib...");
 
-  const result = spawnSync(
-    "wasm-pack",
-    ["build", crateDir, "--target", "web", "--out-dir", "pkg", "--release"],
-    { stdio: "inherit", shell: true }
-  );
-  if(result.status !== 0) {
-    process.exit(result.status || 1);
+    const result = spawnSync(
+      "wasm-pack",
+      ["build", crateDir, "--target", "web", "--out-dir", "pkg", "--release"],
+      { stdio: "inherit", shell: true }
+    );
+    if(result.status !== 0) {
+      process.exit(result.status || 1);
+    }
+    console.log("wasm-lib is built successfully");
+  } else {
+    console.log("wasm-lib up-to-date, skipping build");
   }
-  console.log("wasm-lib is built successfully");
-} else {
-  console.log("wasm-lib up-to-date, skipping build");
 }
+
+if(RUN_DIRECTLY) {
+  buildWasm();
+}
+
+module.exports = { buildWasm };

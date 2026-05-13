@@ -13,9 +13,9 @@
     "lint": "next lint",
     "bundle": "node scripts/bundle",
     "prelaunch": "node scripts/prelaunch",
-    "force-prelaunch": "node scripts/prelaunch force",
-    "wasm:build": "node scripts/build-wasm",
-    "wasm:build:force": "node scripts/build-wasm force"
+    "prelaunch:force": "node scripts/prelaunch -f",
+    "wasm:build": "node scripts/build-wasm --run",
+    "wasm:build:force": "node scripts/build-wasm -f --run"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
