@@ -58,6 +58,9 @@ async function extractNecessaryAssetsFromMinecraft() {
   const blockModelsPath = path.resolve(minecraftAssetsPath, "models");
   fs.mkdirSync(blockModelsPath, { recursive: true });
 
+  const blockStatesPath = path.resolve(minecraftAssetsPath, "blockstates");
+  fs.mkdirSync(blockStatesPath, { recursive: true });
+
   // Extract en_us.json, block textures and block models from client.jar
   await new Promise((resolve, reject) => {
     yauzl.fromBuffer(fs.readFileSync(clientJarPath), { lazyEntries: true }, (err, zipfile) => {
@@ -104,6 +107,22 @@ async function extractNecessaryAssetsFromMinecraft() {
             const modelName = path.basename(entry.fileName);
             const modelFilePath = path.resolve(blockModelsPath, modelName);
             const writeStream = fs.createWriteStream(modelFilePath);
+            readStream.pipe(writeStream);
+            writeStream.on("close", () => {
+              extractedModelCount++;
+              zipfile.readEntry();
+            });
+            writeStream.on("error", reject);
+            readStream.on("error", reject);
+          });
+          return;
+        }
+        if(entry.fileName.startsWith("assets/minecraft/blockstates/") && entry.fileName.endsWith(".json")) {
+          zipfile.openReadStream(entry, (err, readStream) => {
+            if(err) return reject(err);
+            const stateName = path.basename(entry.fileName);
+            const stateFilePath = path.resolve(blockStatesPath, stateName);
+            const writeStream = fs.createWriteStream(stateFilePath);
             readStream.pipe(writeStream);
             writeStream.on("close", () => {
               extractedModelCount++;
