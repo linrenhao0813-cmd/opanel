@@ -71,6 +71,7 @@
   "sidebar.server": "サーバー",
   "sidebar.server.dashboard": "ダッシュボード",
   "sidebar.server.terminal": "バックグラウンド",
+  "sidebar.server.map": "マップ",
   "sidebar.management": "管理",
   "sidebar.management.saves": "アーカイブ",
   "sidebar.management.players": "プレイヤー",
@@ -398,6 +399,13 @@
   "terminal.shortcut.form.command.label": "命令",
   "terminal.shortcut.form.command.placeholder": "実行するコマンドを入力してください...",
   "terminal.shortcut.form.command.empty": "命令は空にできません",
+
+  "map.title": "マップ",
+  "map.settings.title": "マップ設定",
+  "map.settings.description": "ここでマップの表示設定を調整できます。",
+  "map.settings.biome-coloring": "バイオーム着色",
+  "map.settings.render-shadows": "影のレンダリング",
+  "map.settings.debug-mode": "デバッグモード",
 
   "logs.title": "ログ",
   "logs.description": "サーバーのすべてのログファイルを管理および確認する",

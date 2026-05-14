@@ -38,7 +38,7 @@ const serverGroupItems = [
     icon: SquareTerminal
   },
   {
-    name: "地图",
+    name: $("sidebar.server.map"),
     url: "/panel/map",
     icon: MapIcon
   }

@@ -50,26 +50,26 @@ function MapSettingsPopover({
       <PopoverTrigger asChild={asChild}>{children}</PopoverTrigger>
       <PopoverContent align="end" className="w-xs mb-1 bg-accent">
         <PopoverHeader className="mb-4">
-          <PopoverTitle>地图设置</PopoverTitle>
+          <PopoverTitle>{$("map.settings.title")}</PopoverTitle>
           <PopoverDescription>
-            在此调整地图显示设置选项。
+            {$("map.settings.description")}
           </PopoverDescription>
         </PopoverHeader>
         <FieldGroup className="gap-4">
           <Field orientation="horizontal">
-            <FieldLabel>生物群系着色</FieldLabel>
+            <FieldLabel>{$("map.settings.biome-coloring")}</FieldLabel>
             <Switch
               checked={settings.biomeColoring}
               onCheckedChange={(checked) => onSettingsChange({ ...settings, biomeColoring: checked })}/>
           </Field>
           <Field orientation="horizontal">
-            <FieldLabel>渲染阴影</FieldLabel>
+            <FieldLabel>{$("map.settings.render-shadows")}</FieldLabel>
             <Switch
               checked={settings.renderShadows}
               onCheckedChange={(checked) => onSettingsChange({ ...settings, renderShadows: checked })}/>
           </Field>
           <Field orientation="horizontal">
-            <FieldLabel>调试模式</FieldLabel>
+            <FieldLabel>{$("map.settings.debug-mode")}</FieldLabel>
             <Switch
               checked={settings.debugMode}
               onCheckedChange={(checked) => onSettingsChange({ ...settings, debugMode: checked })}/>
@@ -120,7 +120,7 @@ export default function ServerMap() {
 
   return (
     <SubPage
-      title="地图"
+      title={$("map.title")}
       showHeader={false}
       className="bg-background p-0">
       <div className="relative w-full h-full shadow-[inset_0px_0px_20px_4px_rgba(0,0,0,0.14)]">
