@@ -50,23 +50,23 @@ pub fn init_panic_hook() {
 /// (1024 bytes, row-major). The caller wraps this in a `Uint8ClampedArray` and
 /// an `ImageData` to feed an OffscreenCanvas.
 #[wasm_bindgen]
-pub fn render_tile_rgba(bytes: &[u8]) -> Result<Box<[u8]>, JsError> {
+pub fn render_tile_rgba(bytes: &[u8], biome_coloring: bool, render_shadows: bool) -> Result<Box<[u8]>, JsError> {
     let tile = decode::decode(bytes).map_err(|e| JsError::new(&format!("{e:?}")))?;
-    Ok(render::render(&tile).into_boxed_slice())
+    Ok(render::render(&tile, biome_coloring, render_shadows).into_boxed_slice())
 }
 
 /// Decode an .oomap bundle and render every tile to its 16*16 RGBA buffer.
 /// Returns a `TileBundle` handle the JS side iterates via `len` / `x_at` /
 /// `z_at` / `rgba_at`.
 #[wasm_bindgen]
-pub fn render_tile_bundle_rgba(bytes: &[u8]) -> Result<TileBundle, JsError> {
+pub fn render_tile_bundle_rgba(bytes: &[u8], biome_coloring: bool, render_shadows: bool) -> Result<TileBundle, JsError> {
     let raw = decode::decode_bundle(bytes).map_err(|e| JsError::new(&format!("{e:?}")))?;
     let entries = raw
         .into_iter()
         .map(|e| RenderedBundleEntry {
             x: e.x,
             z: e.z,
-            rgba: render::render(&e.tile).into_boxed_slice(),
+            rgba: render::render(&e.tile, biome_coloring, render_shadows).into_boxed_slice(),
         })
         .collect();
     Ok(TileBundle { entries })

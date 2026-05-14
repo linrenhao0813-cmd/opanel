@@ -1,6 +1,8 @@
 import type {
   MainToWorker,
+  RenderSettings,
   ViewportMessage,
+  WorkerToMain,
 } from "./tile-worker-protocol";
 import {
   initSync,
@@ -11,12 +13,17 @@ import { fetchAvailableTiles, fetchTilesInRange } from "./tile-fetch";
 
 const TILE_BLOCKS = 16;
 const BASE_COLOR = "#222";
+const FPS_WINDOW_MS = 1000;
+const FPS_REPORT_INTERVAL_MS = 200;
 
 let canvas: OffscreenCanvas | null = null;
 let ctx: OffscreenCanvasRenderingContext2D | null = null;
 let saveName = "";
 let currentViewport: ViewportMessage | null = null;
 let availableTiles: [number, number][] = [];
+let settings: RenderSettings;
+const frameTimes: number[] = [];
+let fpsReportTimer: NodeJS.Timeout | null = null;
 
 const tileCache = new Map<string, ImageBitmap>();
 const inflight = new Set<string>();
@@ -62,8 +69,18 @@ function drawSingleTile(viewport: ViewportMessage, x: number, z: number, bitmap:
   ctx.drawImage(bitmap, x0, y0, x1 - x0, y1 - y0);
 }
 
+function reportFps(): void {
+  const cutoff = performance.now() - FPS_WINDOW_MS;
+  while(frameTimes.length > 0 && frameTimes[0] < cutoff) {
+    frameTimes.shift();
+  }
+  self.postMessage({ type: "fps", value: frameTimes.length } satisfies WorkerToMain);
+}
+
 function renderViewport(viewport: ViewportMessage): void {
   if(!canvas || !ctx) return;
+
+  frameTimes.push(performance.now());
 
   let resized = false;
   if(canvas.width !== viewport.viewportPx.width) {
@@ -116,7 +133,7 @@ async function scheduleFetchRange(save: string, viewport: ViewportMessage): Prom
     const bytes = await fetchTilesInRange(save, xMin, zMin, xMax, zMax);
     if(!bytes) return;
 
-    const bundle = render_tile_bundle_rgba(new Uint8Array(bytes));
+    const bundle = render_tile_bundle_rgba(new Uint8Array(bytes), settings.biomeColoring, settings.renderShadows);
     const count = bundle.len();
     for(let i = 0; i < count; i++) {
       const x = bundle.x_at(i);
@@ -130,6 +147,7 @@ async function scheduleFetchRange(save: string, viewport: ViewportMessage): Prom
       const bitmap = await createImageBitmap(imageData);
 
       tileCache.set(key, bitmap);
+      self.postMessage({ type: "tilesLoaded", value: tileCache.size } satisfies WorkerToMain);
       if(currentViewport && save === saveName && inBounds(currentViewport, x, z)) {
         drawSingleTile(currentViewport, x, z, bitmap);
       }
@@ -150,6 +168,7 @@ self.onmessage = async (e: MessageEvent<MainToWorker>) => {
       canvas = msg.canvas;
       ctx = canvas.getContext("2d");
       saveName = msg.saveName;
+      if(msg.settings) settings = msg.settings;
       if(ctx) {
         ctx.imageSmoothingEnabled = false;
       }
@@ -162,6 +181,21 @@ self.onmessage = async (e: MessageEvent<MainToWorker>) => {
     case "setSave":
       saveName = msg.saveName;
       if(currentViewport) renderViewport(currentViewport);
+      return;
+    case "setSettings":
+      settings = msg.settings;
+      tileCache.clear();
+      self.postMessage({ type: "tilesLoaded", value: tileCache.size } satisfies WorkerToMain);
+      if(currentViewport) renderViewport(currentViewport);
+      return;
+    case "setFpsReporting":
+      if(msg.enabled && !fpsReportTimer) {
+        fpsReportTimer = setInterval(reportFps, FPS_REPORT_INTERVAL_MS);
+      } else if(!msg.enabled && fpsReportTimer) {
+        clearInterval(fpsReportTimer);
+        fpsReportTimer = null;
+        frameTimes.length = 0;
+      }
       return;
     case "viewport":
       currentViewport = msg;

@@ -54,7 +54,7 @@ fn rendered_buffer_has_expected_size() {
         &[64u16; TILE_BLOCKS],
     );
     let tile = decode(&bytes).unwrap();
-    let rgba = render(&tile);
+    let rgba = render(&tile, true, true);
     assert_eq!(rgba.len(), TILE_RGBA_LEN);
     assert_eq!(rgba.len(), 16 * 16 * 4);
 }
@@ -67,7 +67,7 @@ fn air_pixels_are_fully_transparent() {
         &[0u16; TILE_BLOCKS],
     );
     let tile = decode(&bytes).unwrap();
-    let rgba = render(&tile);
+    let rgba = render(&tile, true, true);
     for chunk in rgba.chunks_exact(4) {
         assert_eq!(chunk, &[0, 0, 0, 0], "air should be fully transparent");
     }
@@ -84,7 +84,7 @@ fn flat_stone_uses_normal_shade() {
         &[64u16; TILE_BLOCKS],
     );
     let tile = decode(&bytes).unwrap();
-    let rgba = render(&tile);
+    let rgba = render(&tile, true, true);
     for chunk in rgba.chunks_exact(4) {
         assert_eq!(chunk, &[100, 100, 100, 255]);
     }

@@ -157,14 +157,18 @@ pub fn lookup(id: &str) -> [[u8; 4]; 4] {
     MAGENTA
 }
 
+pub const DEFAULT_GRASS_COLOR: [u8; 4] = [0x91, 0xbd, 0x59, 0xff];
+
 /// Look up the grass tint RGBA for a Minecraft biome id (e.g. `minecraft:plains`).
 /// Unknown biomes fall back to the default plains tint so vegetation still renders.
 pub fn lookup_grass(biome: &str) -> [u8; 4] {
-    GRASS_COLORS.get(biome).copied().unwrap_or([0x91, 0xbd, 0x59, 0xff])
+    GRASS_COLORS.get(biome).copied().unwrap_or(DEFAULT_GRASS_COLOR)
 }
+
+pub const DEFAULT_WATER_COLOR: [u8; 4] = [0x3f, 0x76, 0xe4, 0xff];
 
 /// Look up the Java Edition water color RGBA for a Minecraft biome id.
 /// Unknown biomes fall back to the default ocean blue.
 pub fn lookup_water(biome: &str) -> [u8; 4] {
-    WATER_COLORS.get(biome).copied().unwrap_or([0x3f, 0x76, 0xe4, 0xff])
+    WATER_COLORS.get(biome).copied().unwrap_or(DEFAULT_WATER_COLOR)
 }

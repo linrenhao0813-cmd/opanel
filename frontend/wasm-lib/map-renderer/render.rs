@@ -1,5 +1,5 @@
 use crate::decode::{DecodedTile, TILE_BLOCKS, TILE_SIDE};
-use crate::palette;
+use crate::palette::{self, DEFAULT_GRASS_COLOR, DEFAULT_WATER_COLOR};
 use crate::utils::shade_rgba;
 
 const BYTES_PER_PIXEL: usize = 4;
@@ -11,7 +11,7 @@ const AIR_ID: &str = "minecraft:air";
 /// Order matches `tile.blocks` / `tile.heights`: row-major, z then x.
 /// Air pixels are emitted with alpha = 0 so the caller can composite layers
 /// on top.
-pub fn render(tile: &DecodedTile) -> Vec<u8> {
+pub fn render(tile: &DecodedTile, biome_coloring: bool, render_shadows: bool) -> Vec<u8> {
     let mut out = vec![0u8; TILE_RGBA_LEN];
     for z in 0..TILE_SIDE {
         for x in 0..TILE_SIDE {
@@ -26,12 +26,18 @@ pub fn render(tile: &DecodedTile) -> Vec<u8> {
                 continue;
             }
 
-            let shades = match id.as_str() {
-                "minecraft:grass_block" => shade_rgba(palette::lookup_grass(biome)),
-                "minecraft:water" => shade_rgba(palette::lookup_water(biome)),
+            let shades = match (id.as_str(), biome_coloring) {
+                ("minecraft:grass_block", true) => shade_rgba(palette::lookup_grass(biome)),
+                ("minecraft:water", true) => shade_rgba(palette::lookup_water(biome)),
+                ("minecraft:grass_block", false) => shade_rgba(DEFAULT_GRASS_COLOR),
+                ("minecraft:water", false) => shade_rgba(DEFAULT_WATER_COLOR),
                 _ => palette::lookup(id)
             };
-            let shade_idx = shade_for(&tile.heights, x, z);
+            let shade_idx = if render_shadows {
+                shade_for(&tile.heights, x, z)
+            } else {
+                1
+            };
             let rgba = shades[shade_idx];
 
             let dst = i * BYTES_PER_PIXEL;

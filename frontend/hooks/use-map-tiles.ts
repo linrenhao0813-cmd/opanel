@@ -24,6 +24,8 @@ export interface UseMapTilesResult {
   setViewportSize: (width: number, height: number) => void;
 }
 
+export const DEFAULT_ZOOM = 2;
+
 /**
  * Pure state container + rAF-coalesced viewport dispatcher for the map.
  * Owns camera / zoom / viewport refs but never re-renders the React tree —
@@ -32,7 +34,7 @@ export interface UseMapTilesResult {
  */
 export function useMapTiles({ onMessage }: UseMapTilesOptions): UseMapTilesResult {
   const cameraRef = useRef({ x: 0, z: 0 });
-  const zoomRef = useRef(2);
+  const zoomRef = useRef(DEFAULT_ZOOM);
   const viewportRef = useRef({ width: 0, height: 0 });
   const generationRef = useRef(0);
   const rafRef = useRef<number | null>(null);

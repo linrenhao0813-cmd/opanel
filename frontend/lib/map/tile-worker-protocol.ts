@@ -1,13 +1,30 @@
+export interface RenderSettings {
+  biomeColoring: boolean
+  renderShadows: boolean
+  debugMode: boolean
+}
+
 export interface InitMessage {
   type: "init"
   canvas: OffscreenCanvas
   saveName: string
   wasmModule: ArrayBuffer
+  settings?: RenderSettings
 }
 
 export interface SetSaveMessage {
   type: "setSave"
   saveName: string
+}
+
+export interface SetSettingsMessage {
+  type: "setSettings"
+  settings: RenderSettings
+}
+
+export interface SetFpsReportingMessage {
+  type: "setFpsReporting"
+  enabled: boolean
 }
 
 export interface ViewportMessage {
@@ -33,4 +50,16 @@ export interface ViewportMessage {
   interactive: boolean
 }
 
-export type MainToWorker = InitMessage | SetSaveMessage | ViewportMessage;
+export type MainToWorker = InitMessage | SetSaveMessage | SetSettingsMessage | SetFpsReportingMessage | ViewportMessage;
+
+export interface FpsMessage {
+  type: "fps"
+  value: number
+}
+
+export interface TilesLoadedMessage {
+  type: "tilesLoaded"
+  value: number
+}
+
+export type WorkerToMain = FpsMessage | TilesLoadedMessage;

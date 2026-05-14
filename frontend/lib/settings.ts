@@ -1,6 +1,7 @@
 import type { LanguageCode } from "@/lang";
 import type { ConsoleLogLevel } from "./ws/terminal";
 import type { ConfigFile } from "@/app/panel/bukkit-config/page";
+import type { RenderSettings } from "./map/tile-worker-protocol";
 import {
   AvatarProvider,
   type CommandShortcut,
@@ -14,6 +15,7 @@ const storageKey = "opanel.settings";
 
 export type SettingsStorageType = {
   "dashboard.monitor-interval": number
+  "map.render-settings": RenderSettings
   "players.avatar-provider": AvatarProvider | string
   "players.skin-provider": SkinProvider | string
   // "players.cape-provider": CapeProvider | string
@@ -46,6 +48,11 @@ export type SettingsStorageType = {
 
 const defaultSettings: SettingsStorageType = {
   "dashboard.monitor-interval": 2000, // ms
+  "map.render-settings": {
+    biomeColoring: true,
+    renderShadows: true,
+    debugMode: false
+  },
   "players.avatar-provider": AvatarProvider.MINOTAR,
   "players.skin-provider": SkinProvider.MINOTAR,
   // "players.cape-provider": CapeProvider.CRAFATAR,
