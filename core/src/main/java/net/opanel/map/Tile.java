@@ -8,16 +8,32 @@ import java.util.Map;
 
 public class Tile {
     private static final String AIR_ID = "minecraft:air";
+    private static final String THE_VOID_ID = "minecraft:the_void";
+    private static final String PLAINS_ID = "minecraft:plains";
+
+    public static class Block {
+        public final String id;
+        public final String biome;
+
+        private Block(String id, String biome) {
+            this.id = id;
+            this.biome = biome;
+        }
+    }
 
     public static class Section {
         private final int y;
         private final List<String> palette;
         private final int[] blockStates;
+        private final List<String> biomesPalette;
+        private final int[] biomes;
 
-        private Section(int y, List<String> palette, int[] blockStates) {
+        private Section(int y, List<String> palette, int[] blockStates, List<String> biomesPalette, int[] biomes) {
             this.y = y;
             this.palette = palette;
             this.blockStates = blockStates;
+            this.biomesPalette = biomesPalette;
+            this.biomes = biomes;
         }
 
         public int getY() {
@@ -37,6 +53,26 @@ public class Tile {
                 return AIR_ID;
             }
             return palette.get(blockStates[index]);
+        }
+
+        /**
+         *
+         * @param x Relative X in the section
+         * @param y Relative Y in the section
+         * @param z Relative Z in the section
+         * @return Biome type
+         */
+        public String getBlockBiomeType(int x, int y, int z) {
+            if(biomesPalette == null || biomesPalette.isEmpty()) return PLAINS_ID;
+            if(biomes == null) {
+                return biomesPalette.get(0);
+            }
+
+            int biomeX = x >>> 2;
+            int biomeY = y >>> 2;
+            int biomeZ = z >>> 2;
+            final int index = biomeY * 16 + biomeZ * 4 + biomeX;
+            return biomesPalette.get(biomes[index]);
         }
     }
 
@@ -69,23 +105,27 @@ public class Tile {
     /**
      * @return A 16x16 two-dimensional array storing top block type ids
      */
-    public String[][] getTopBlockTypes() {
-        String[][] result = new String[16][16];
+    public Block[][] getTopBlocks() {
+        Block[][] result = new Block[16][16];
         for(int z = 0; z < 16; z++) {
             for(int x = 0; x < 16; x++) {
-                final int y = getHeight(x, z);
+                int y = getHeight(x, z);
                 if(y < minY) {
-                    result[z][x] = AIR_ID;
+                    result[z][x] = new Block(AIR_ID, THE_VOID_ID);
                     continue;
                 }
 
                 Section section = sections.get(y >> 4);
                 if(section == null) {
-                    result[z][x] = AIR_ID;
+                    result[z][x] = new Block(AIR_ID, THE_VOID_ID);
                     continue;
                 }
 
-                result[z][x] = section.getBlockType(x, y & 15, z);
+                y &= 15;
+                result[z][x] = new Block(
+                    section.getBlockType(x, y, z),
+                    section.getBlockBiomeType(x, y, z)
+                );
             }
         }
         return result;
@@ -101,11 +141,18 @@ public class Tile {
     }
 
     public static Section createSection(int y, List<String> palette, long[] packedBlockStates) {
+        return createSection(y, palette, packedBlockStates, List.of(), null);
+    }
+
+    public static Section createSection(int y, List<String> palette, long[] packedBlockStates, List<String> biomesPalette, long[] packedBiomes) {
         int paletteSize = palette.size();
+        int biomesPaletteSize = biomesPalette.size();
         return new Section(
             y,
             palette,
-            AnvilUtility.bitunpack(packedBlockStates, AnvilUtility.paletteSizeToBitsSize(paletteSize))
+            AnvilUtility.bitunpack(packedBlockStates, AnvilUtility.paletteSizeToBitsSize(paletteSize, 4)),
+            biomesPalette,
+            packedBiomes != null && biomesPaletteSize > 1 ? AnvilUtility.bitunpack(packedBiomes, AnvilUtility.paletteSizeToBitsSize(biomesPaletteSize)) : null
         );
     }
 }

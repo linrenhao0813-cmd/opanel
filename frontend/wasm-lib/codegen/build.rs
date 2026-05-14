@@ -5,9 +5,8 @@ use std::path::{Path, PathBuf};
 
 use serde_json::Value;
 
-// Shade multipliers (brightest → darkest). Matches the layout the rest of the
-// crate expects from `palette::lookup` (and the prior colors.txt schema).
-const SHADES: [f32; 4] = [1.0, 0.8, 0.5, 0.4];
+#[path = "../map-renderer/utils.rs"]
+mod utils;
 
 // Vanilla leaf tints. Grayscale leaf textures are colorized by these constants
 // before averaging. Leaves with baked-in color (cherry/azalea/pale_oak) are
@@ -27,6 +26,7 @@ const TEXTURE_PRIORITY: &[&str] = &["top", "bottom", "side", "inside"];
 
 fn main() {
     println!("cargo:rerun-if-changed=codegen/build.rs");
+    println!("cargo:rerun-if-changed=map-renderer/utils.rs");
 
     let assets_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
@@ -72,7 +72,8 @@ fn main() {
             .unwrap_or_else(|| panic!("blockstate filename not utf-8: {}", path.display()));
         let id = format!("minecraft:{}", stem);
 
-        // Skip blocks with hardcoded overrides below
+        // Water and grass blocks will be colored by biome during rendering,
+        // so just skip them here
         if id == "minecraft:water" || id == "minecraft:grass_block" {
             continue;
         }
@@ -92,29 +93,19 @@ fn main() {
 
         let tint = LEAF_TINTS.iter().find(|(k, _)| *k == id).map(|(_, c)| *c);
         let base = average_rgba(&texture_path, tint);
+        let shades = utils::shade_rgba(base);
 
         let mut value = String::from("[");
-        for (i, s) in SHADES.iter().enumerate() {
+        for (i, s) in shades.iter().enumerate() {
             if i > 0 {
                 value.push(',');
             }
-            value.push_str(&format!(
-                "[{},{},{},{}]",
-                shade(base[0], *s),
-                shade(base[1], *s),
-                shade(base[2], *s),
-                base[3],
-            ));
+            value.push_str(&format!("[{},{},{},{}]", s[0], s[1], s[2], s[3]));
         }
         value.push(']');
 
         map.entry(id, &value);
     }
-
-    // Special blocks
-    map.entry("minecraft:water".to_string(), "[[27, 80, 194, 255]; 4]");
-    // * inherited from Dynmap colorscheme file
-    map.entry("minecraft:grass_block".to_string(), "[[69, 110, 51, 255], [55, 88, 40, 255], [34, 55, 25, 255], [27, 44, 20, 255]]");
 
     let out_path = Path::new(&env::var_os("OUT_DIR").unwrap()).join("colors.rs");
     let mut out = BufWriter::new(File::create(&out_path).unwrap());
@@ -206,10 +197,6 @@ fn strip_resource_prefix(s: &str) -> Option<String> {
     let s = s.strip_prefix("minecraft:").unwrap_or(s);
     let s = s.strip_prefix("block/").unwrap_or(s);
     if s.is_empty() { None } else { Some(s.to_string()) }
-}
-
-fn shade(channel: u8, factor: f32) -> u8 {
-    (channel as f32 * factor).round().clamp(0.0, 255.0) as u8
 }
 
 fn tinted(c: u8, t: u8) -> u64 {

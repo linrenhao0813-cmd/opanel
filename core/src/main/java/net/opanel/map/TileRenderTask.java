@@ -79,30 +79,45 @@ public class TileRenderTask implements Runnable {
     }
 
     private void compressTileToStream(Tile tile, OutputStream stream) throws IOException {
-        String[][] topBlocks = tile.getTopBlockTypes();
+        Tile.Block[][] topBlocks = tile.getTopBlocks();
         int[] heightMap = tile.getHeightMap();
 
-        // generate palette
+        // generate palettes
         List<String> palette = new ArrayList<>();
         HashMap<String, Integer> indexes = new HashMap<>();
+        List<String> biomesPalette = new ArrayList<>();
+        HashMap<String, Integer> biomesIndexes = new HashMap<>();
         for(int z = 0; z < 16; z++) {
             for(int x = 0; x < 16; x++) {
-                String id = topBlocks[z][x];
+                Tile.Block block = topBlocks[z][x];
+
+                String id = block.id;
                 if(!indexes.containsKey(id)) {
                     palette.add(id);
                     indexes.put(id, palette.size() - 1);
                 }
+
+                String biome = block.biome;
+                if(!biomesIndexes.containsKey(biome)) {
+                    biomesPalette.add(biome);
+                    biomesIndexes.put(biome, biomesPalette.size() - 1);
+                }
             }
         }
 
-        // generate block data
+        // generate block data and biomes data
         int[] blockData = new int[256];
+        int[] biomesData = new int[256];
         for(int z = 0; z < 16; z++) {
             for(int x = 0; x < 16; x++) {
-                blockData[z * 16 + x] = indexes.get(topBlocks[z][x]);
+                int index = z * 16 + x;
+                Tile.Block block = topBlocks[z][x];
+                blockData[index] = indexes.get(block.id);
+                biomesData[index] = biomesIndexes.get(block.biome);
             }
         }
-        long[] bitpackedBlockData = AnvilUtility.bitpack(blockData, AnvilUtility.paletteSizeToBitsSize(palette.size()));
+        long[] bitpackedBlockData = AnvilUtility.bitpack(blockData, AnvilUtility.paletteSizeToBitsSize(palette.size(), 4));
+        long[] bitpackedBiomesData = biomesPalette.size() > 1 ? AnvilUtility.bitpack(biomesData, AnvilUtility.paletteSizeToBitsSize(biomesPalette.size())) : new long[] { 0L };
 
         // pack height map
         long[] bitpackedHeightMap = AnvilUtility.bitpack(heightMap, 9);
@@ -128,6 +143,20 @@ public class TileRenderTask implements Runnable {
         // write height map part
         dos.writeShort(bitpackedHeightMap.length);
         for(long data : bitpackedHeightMap) {
+            dos.writeLong(data);
+        }
+
+        // write biomes palette part
+        dos.writeShort(biomesPalette.size());
+        for(String biome : biomesPalette) {
+            byte[] biomeBytes = biome.getBytes(StandardCharsets.UTF_8);
+            dos.writeByte(biomeBytes.length & 0xff);
+            dos.write(biomeBytes);
+        }
+
+        // write biomes data part
+        dos.writeShort(bitpackedBiomesData.length);
+        for(long data : bitpackedBiomesData) {
             dos.writeLong(data);
         }
 

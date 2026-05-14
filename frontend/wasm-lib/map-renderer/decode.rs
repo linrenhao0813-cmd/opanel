@@ -22,6 +22,8 @@ pub struct DecodedTile {
     pub palette: Vec<String>,
     pub blocks: [u16; TILE_BLOCKS],
     pub heights: [u16; TILE_BLOCKS],
+    pub biomes_palette: Vec<String>,
+    pub biomes: [u16; TILE_BLOCKS],
 }
 
 #[derive(Debug)]
@@ -59,6 +61,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedTile, DecodeError> {
         return Err(DecodeError::BadMagic);
     }
 
+    // decode palette part
     let palette_size = cur.read_u16()? as usize;
     let mut palette = Vec::with_capacity(palette_size);
     for _ in 0..palette_size {
@@ -68,7 +71,8 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedTile, DecodeError> {
         palette.push(s.to_string());
     }
 
-    let block_bits = palette_size_to_bits_size(palette_size);
+    // decode block data part
+    let block_bits = palette_size_to_bits_size(palette_size, Some(4));
     let blocks = read_packed_array::<TILE_BLOCKS>(&mut cur, block_bits)?;
     for &idx in &blocks {
         if (idx as usize) >= palette.len() {
@@ -76,9 +80,37 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedTile, DecodeError> {
         }
     }
 
+    // decode height map part
     let heights = read_packed_array::<TILE_BLOCKS>(&mut cur, HEIGHT_BITS)?;
 
-    Ok(DecodedTile { palette, blocks, heights })
+    // decode biomes palette part
+    let biomes_palette_size = cur.read_u16()? as usize;
+    let mut biomes_palette = Vec::with_capacity(biomes_palette_size);
+    for _ in 0..biomes_palette_size {
+        let len = cur.read_u8()? as usize;
+        let raw = cur.read_slice(len)?;
+        let s = std::str::from_utf8(raw).map_err(DecodeError::Utf8)?;
+        biomes_palette.push(s.to_string());
+    }
+
+    // decode biome data part
+    let biomes = if biomes_palette_size <= 1 {
+        let long_count = cur.read_u16()? as usize;
+        for _ in 0..long_count {
+            cur.read_u64()?;
+        }
+        [0u16; TILE_BLOCKS]
+    } else {
+        let biome_bits = palette_size_to_bits_size(biomes_palette_size, None);
+        read_packed_array::<TILE_BLOCKS>(&mut cur, biome_bits)?
+    };
+    for &idx in &biomes {
+        if (idx as usize) >= biomes_palette.len() {
+            return Err(DecodeError::BadPaletteIndex(idx));
+        }
+    }
+
+    Ok(DecodedTile { palette, blocks, heights, biomes_palette, biomes })
 }
 
 fn read_packed_array<const N: usize>(

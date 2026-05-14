@@ -1,5 +1,6 @@
 use crate::decode::{DecodedTile, TILE_BLOCKS, TILE_SIDE};
 use crate::palette;
+use crate::utils::shade_rgba;
 
 const BYTES_PER_PIXEL: usize = 4;
 pub const TILE_RGBA_LEN: usize = TILE_BLOCKS * BYTES_PER_PIXEL;
@@ -17,13 +18,19 @@ pub fn render(tile: &DecodedTile) -> Vec<u8> {
             let i = z * TILE_SIDE + x;
             let block_idx = tile.blocks[i] as usize;
             let id = &tile.palette[block_idx];
+            let biome_idx = tile.biomes[i] as usize;
+            let biome = &tile.biomes_palette[biome_idx];
 
             if id == AIR_ID {
                 // bytes already 0 → transparent
                 continue;
             }
 
-            let shades = palette::lookup(id);
+            let shades = match id.as_str() {
+                "minecraft:grass_block" => shade_rgba(palette::lookup_grass(biome)),
+                "minecraft:water" => shade_rgba(palette::lookup_water(biome)),
+                _ => palette::lookup(id)
+            };
             let shade_idx = shade_for(&tile.heights, x, z);
             let rgba = shades[shade_idx];
 

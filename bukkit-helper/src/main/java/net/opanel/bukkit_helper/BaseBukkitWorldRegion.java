@@ -1,8 +1,12 @@
 package net.opanel.bukkit_helper;
 
 import de.tr7zw.changeme.nbtapi.NBT;
+import de.tr7zw.changeme.nbtapi.NBTContainer;
+import de.tr7zw.changeme.nbtapi.NBTList;
+import de.tr7zw.changeme.nbtapi.NBTStringList;
 import de.tr7zw.changeme.nbtapi.iface.ReadWriteNBT;
 import de.tr7zw.changeme.nbtapi.iface.ReadWriteNBTCompoundList;
+import de.tr7zw.changeme.nbtapi.iface.ReadWriteNBTList;
 import net.opanel.annotation.Rewrite;
 import net.opanel.common.OPanelWorldRegion;
 import net.opanel.map.Tile;
@@ -183,6 +187,9 @@ public abstract class BaseBukkitWorldRegion implements OPanelWorldRegion {
         ReadWriteNBT blockStates = sectionNbt.getCompound("block_states");
         if(blockStates == null) return null;
 
+        ReadWriteNBT biomes = sectionNbt.getCompound("biomes");
+        if(biomes == null) return null;
+
         ReadWriteNBTCompoundList paletteNbt = blockStates.getCompoundList("palette");
         if(paletteNbt == null || paletteNbt.isEmpty()) return null;
         List<String> palette = new ArrayList<>();
@@ -193,9 +200,19 @@ public abstract class BaseBukkitWorldRegion implements OPanelWorldRegion {
             }
         }
 
+        ReadWriteNBTList<String> biomesPaletteNbt = biomes.getStringList("palette");
+        List<String> biomesPalette = new ArrayList<>();
+        if(biomesPaletteNbt != null && !biomesPaletteNbt.isEmpty()) {
+            for(String biome : biomesPaletteNbt) {
+                biomesPalette.add(biome);
+            }
+        }
+
         long[] blockStatesData = blockStates.getLongArray("data");
         if((blockStatesData == null || blockStatesData.length == 0) && palette.size() > 1) return null;
 
-        return Tile.createSection(y, palette, blockStatesData);
+        long[] biomesData = biomes.getLongArray("data");
+
+        return Tile.createSection(y, palette, blockStatesData, biomesPalette, biomesData);
     }
 }
