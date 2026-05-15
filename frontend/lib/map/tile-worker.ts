@@ -12,6 +12,8 @@ import {
 import { fetchAvailableTiles, fetchTilesInRange } from "./tile-fetch";
 
 const TILE_BLOCKS = 16;
+const MACRO_BLOCKS_PER_TILE = 16;
+const MACRO_PX = MACRO_BLOCKS_PER_TILE * TILE_BLOCKS;
 const BASE_COLOR = "#222";
 const FPS_WINDOW_MS = 1000;
 const FPS_REPORT_INTERVAL_MS = 200;
@@ -26,6 +28,7 @@ const frameTimes: number[] = [];
 let fpsReportTimer: NodeJS.Timeout | null = null;
 
 const tileCache = new Map<string, ImageBitmap>();
+const macroCanvases = new Map<string, OffscreenCanvas>();
 const inflight = new Set<string>();
 const inflightBundles = new Set<string>();
 
@@ -53,20 +56,30 @@ function tileMetrics(viewport: ViewportMessage): { tilePx: number; originX: numb
   return { tilePx, originX, originY };
 }
 
-function drawSingleTile(viewport: ViewportMessage, x: number, z: number, bitmap: ImageBitmap): void {
-  if(!ctx) return;
+function getOrCreateMacro(mx: number, mz: number): OffscreenCanvas {
+  const key = getTileKey(saveName, mx, mz);
+  let macro = macroCanvases.get(key);
+  if(!macro) {
+    macro = new OffscreenCanvas(MACRO_PX, MACRO_PX);
+    const mctx = macro.getContext("2d");
+    if(mctx) mctx.imageSmoothingEnabled = false;
+    macroCanvases.set(key, macro);
+  }
+  return macro;
+}
 
-  const { tilePx, originX, originY } = tileMetrics(viewport);
-  const x0 = Math.round(originX + x * tilePx);
-  const y0 = Math.round(originY + z * tilePx);
-  const x1 = Math.round(originX + (x + 1) * tilePx);
-  const y1 = Math.round(originY + (z + 1) * tilePx);
+function stampTileIntoMacro(x: number, z: number, bitmap: ImageBitmap): void {
+  const mx = Math.floor(x / MACRO_BLOCKS_PER_TILE);
+  const mz = Math.floor(z / MACRO_BLOCKS_PER_TILE);
+  const localX = x - mx * MACRO_BLOCKS_PER_TILE;
+  const localZ = z - mz * MACRO_BLOCKS_PER_TILE;
+  const macro = getOrCreateMacro(mx, mz);
+  const mctx = macro.getContext("2d");
+  if(!mctx) return;
 
-  // Provide a base color for the tile image
-  ctx.fillStyle = BASE_COLOR;
-  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
-
-  ctx.drawImage(bitmap, x0, y0, x1 - x0, y1 - y0);
+  mctx.fillStyle = BASE_COLOR;
+  mctx.fillRect(localX * TILE_BLOCKS, localZ * TILE_BLOCKS, TILE_BLOCKS, TILE_BLOCKS);
+  mctx.drawImage(bitmap, localX * TILE_BLOCKS, localZ * TILE_BLOCKS);
 }
 
 function reportFps(): void {
@@ -96,11 +109,25 @@ function renderViewport(viewport: ViewportMessage) {
   if(!viewport.interactive) fetchTilesAndRender(saveName, viewport);
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for(let z = viewport.tileBounds.zMin; z <= viewport.tileBounds.zMax; z++) {
-    for(let x = viewport.tileBounds.xMin; x <= viewport.tileBounds.xMax; x++) {
-      const key = getTileKey(saveName, x, z);
-      const bitmap = tileCache.get(key);
-      if(bitmap) drawSingleTile(viewport, x, z, bitmap);
+
+  const { tilePx, originX, originY } = tileMetrics(viewport);
+  const macroBlockPx = MACRO_BLOCKS_PER_TILE * tilePx;
+  const mxMin = Math.floor(viewport.tileBounds.xMin / MACRO_BLOCKS_PER_TILE);
+  const mxMax = Math.floor(viewport.tileBounds.xMax / MACRO_BLOCKS_PER_TILE);
+  const mzMin = Math.floor(viewport.tileBounds.zMin / MACRO_BLOCKS_PER_TILE);
+  const mzMax = Math.floor(viewport.tileBounds.zMax / MACRO_BLOCKS_PER_TILE);
+
+  for(let mz = mzMin; mz <= mzMax; mz++) {
+    for(let mx = mxMin; mx <= mxMax; mx++) {
+      const macro = macroCanvases.get(getTileKey(saveName, mx, mz));
+      if(!macro) continue;
+      // Round both edges so adjacent macros share an exact pixel boundary;
+      // raw fractional positions leave 1px seams at non-integer zoom levels.
+      const x0 = Math.round(originX + mx * macroBlockPx);
+      const y0 = Math.round(originY + mz * macroBlockPx);
+      const x1 = Math.round(originX + (mx + 1) * macroBlockPx);
+      const y1 = Math.round(originY + (mz + 1) * macroBlockPx);
+      ctx.drawImage(macro, x0, y0, x1 - x0, y1 - y0);
     }
   }
 }
@@ -146,9 +173,10 @@ async function fetchTilesAndRender(save: string, viewport: ViewportMessage): Pro
       const bitmap = await createImageBitmap(imageData);
 
       tileCache.set(key, bitmap);
+      stampTileIntoMacro(x, z, bitmap);
       self.postMessage({ type: "tilesLoaded", value: tileCache.size } satisfies WorkerToMain);
       if(currentViewport && save === saveName && inBounds(currentViewport, x, z)) {
-        drawSingleTile(currentViewport, x, z, bitmap);
+        renderViewport(currentViewport);
       }
     }
   } catch {
@@ -187,6 +215,7 @@ self.onmessage = async (e: MessageEvent<MainToWorker>) => {
     case "setSettings":
       settings = msg.settings;
       tileCache.clear();
+      macroCanvases.clear();
       self.postMessage({ type: "tilesLoaded", value: tileCache.size } satisfies WorkerToMain);
       if(currentViewport) renderViewport(currentViewport);
       return;

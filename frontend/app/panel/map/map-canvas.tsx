@@ -13,7 +13,7 @@ import { useMapTiles } from "@/hooks/use-map-tiles";
 import { useLatestRef } from "@/hooks/use-latest-ref";
 
 const TILE_BLOCKS = 16;
-const MIN_ZOOM = 2;
+const MIN_ZOOM = 1.75;
 const MAX_ZOOM = 10;
 
 export interface MapCanvasHandle {
