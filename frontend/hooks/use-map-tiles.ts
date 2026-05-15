@@ -1,10 +1,11 @@
-import type { MainToWorker, ViewportMessage } from "@/lib/map/tile-worker-protocol";
+import type { MainToWorker } from "@/lib/map/tile-worker-protocol";
 import { useCallback, useEffect, useRef } from "react";
+import { useLatestRef } from "./use-latest-ref";
 
 const TILE_BLOCKS = 16;
 
 export interface UseMapTilesOptions {
-  onMessage: (msg: MainToWorker) => void;
+  postWorkerMessage: (msg: MainToWorker) => void;
 }
 
 export interface UseMapTilesResult {
@@ -32,24 +33,22 @@ export const DEFAULT_ZOOM = 2;
  * the consumer mutates refs directly during pointer events and calls
  * `postViewport()` to push the latest viewport to the worker.
  */
-export function useMapTiles({ onMessage }: UseMapTilesOptions): UseMapTilesResult {
+export function useMapTiles({ postWorkerMessage }: UseMapTilesOptions): UseMapTilesResult {
   const cameraRef = useRef({ x: 0, z: 0 });
   const zoomRef = useRef(DEFAULT_ZOOM);
   const viewportRef = useRef({ width: 0, height: 0 });
   const generationRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const interactiveRef = useRef(false);
-  const onMessageRef = useRef(onMessage);
+  const postWorkerMessageRef = useLatestRef(postWorkerMessage);
 
-  useEffect(() => {
-    onMessageRef.current = onMessage;
-  }, [onMessage]);
-
-  const postViewport = useCallback((opts?: { interactive?: boolean }) => {
-    interactiveRef.current = opts?.interactive ?? false;
+  const postViewport = useCallback((options?: { interactive?: boolean }) => {
+    interactiveRef.current = options?.interactive ?? false;
 
     if(rafRef.current !== null) return;
 
+    // Use rAF to coalesce multiple rapid calls
+    // and avoid posting too many viewport updates during fast drags or zooms.
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = null;
 
@@ -61,7 +60,7 @@ export function useMapTiles({ onMessage }: UseMapTilesOptions): UseMapTilesResul
       const halfH = (height / 2) / tilePx;
 
       generationRef.current += 1;
-      const msg: ViewportMessage = {
+      postWorkerMessageRef.current({
         type: "viewport",
         generation: generationRef.current,
         camera: { x: cameraRef.current.x, z: cameraRef.current.z },
@@ -74,18 +73,20 @@ export function useMapTiles({ onMessage }: UseMapTilesOptions): UseMapTilesResul
           zMax: Math.ceil(cameraRef.current.z + halfH),
         },
         interactive: interactiveRef.current,
-      };
-      onMessageRef.current(msg);
+      });
     });
-  }, []);
+  }, [postWorkerMessageRef]);
 
   const setViewportSize = useCallback((width: number, height: number) => {
     viewportRef.current = { width, height };
     postViewport();
   }, [postViewport]);
 
-  useEffect(() => () => {
-    if(rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+  // eslint-disable-next-line arrow-body-style
+  useEffect(() => {
+    return () => {
+      if(rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
   }, []);
 
   return { cameraRef, zoomRef, viewportRef, postViewport, setViewportSize };

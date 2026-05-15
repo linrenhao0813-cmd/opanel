@@ -10,6 +10,7 @@ import {
   type WheelEvent,
 } from "react";
 import { useMapTiles } from "@/hooks/use-map-tiles";
+import { useLatestRef } from "@/hooks/use-latest-ref";
 
 const TILE_BLOCKS = 16;
 const MIN_ZOOM = 2;
@@ -44,9 +45,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function MapCanvas
   const workerRef = useRef<Worker | null>(null);
   const dragRef = useRef({ active: false, lastX: 0, lastY: 0 });
   const settingsRef = useRef(settings);
+  const onResizeRef = useLatestRef(onResize);
 
   const { cameraRef, zoomRef, postViewport, setViewportSize } = useMapTiles({
-    onMessage: (msg) => workerRef.current?.postMessage(msg),
+    postWorkerMessage: (msg) => workerRef.current?.postMessage(msg),
   });
 
   const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
@@ -190,12 +192,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function MapCanvas
       if(!rect) return;
 
       setViewportSize(rect.width, rect.height);
-      onResize?.(rect.width, rect.height);
+      onResizeRef.current?.(rect.width, rect.height);
     });
     resizeObserver.observe(containerElem);
 
     return () => resizeObserver.disconnect();
-  }, [setViewportSize, onResize]);
+  }, [setViewportSize, onResizeRef]);
 
   return (
     <div
