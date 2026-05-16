@@ -13,8 +13,8 @@ export async function fetchAvailableTiles(saveName: string): Promise<[number, nu
 
 /**
  * Fetch every available tile inside the chunk rectangle spanned by the two
- * opposite corners. The response is an OOMAP-formatted binary that bundles
- * multiple .omap tiles; the wasm side decodes it. All failure modes (network
+ * opposite corners. The response is an OTILES-formatted binary that bundles
+ * multiple .otile tiles; the wasm side decodes it. All failure modes (network
  * error, non-2xx) resolve to `null` so the worker can silently skip.
  */
 export async function fetchTilesInRange(

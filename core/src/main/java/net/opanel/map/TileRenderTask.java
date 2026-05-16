@@ -4,31 +4,29 @@ import net.opanel.OPanel;
 import net.opanel.common.OPanelWorldRegion;
 import net.opanel.utils.AnvilUtility;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class TileRenderTask implements Runnable {
-    private static final byte[] DATA_MAGIC = "OMAP".getBytes(StandardCharsets.US_ASCII);
-
     private final OPanel plugin;
+    private final MapRenderManager mapRenderManager;
     private final String saveName;
     private final OPanelWorldRegion region;
     private final List<Tile> tiles;
 
     public TileRenderTask(OPanel plugin, String saveName, OPanelWorldRegion region) {
         this.plugin = plugin;
+        mapRenderManager = plugin.getMapRenderManager();
         this.saveName = saveName;
         this.region = region;
         tiles = new ArrayList<>();
     }
 
+    // TODO: persist single-tile re-render to .otiles bundle
     public TileRenderTask(OPanel plugin, String saveName, OPanelWorldRegion region, Tile tile) {
         this.plugin = plugin;
+        mapRenderManager = plugin.getMapRenderManager();
         this.saveName = saveName;
         this.region = region;
         tiles = List.of(tile);
@@ -40,14 +38,6 @@ public class TileRenderTask implements Runnable {
         tiles.addAll(region.getChunkTiles());
 
         String regionFileName = region.getPath().getFileName().toString();
-        Path saveDir = OPanel.MAP_DATA_PATH.resolve(saveName);
-        try {
-            Files.createDirectories(saveDir);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
-
         for(Tile tile : tiles) {
             final int[] pos;
             try {
@@ -56,110 +46,17 @@ public class TileRenderTask implements Runnable {
                 continue;
             }
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final byte[] bytes;
             try {
-                compressTileToStream(tile, baos);
-            } catch (IOException e) {
-                e.printStackTrace();
-                continue;
-            }
-            byte[] bytes = baos.toByteArray();
-
-            try(FileOutputStream fos = new FileOutputStream(saveDir.resolve(pos[0] +"."+ pos[1] +".omap").toFile())) {
-                fos.write(bytes);
+                bytes = TileCompressor.compressTile(tile).toByteArray();
             } catch (IOException e) {
                 e.printStackTrace();
                 continue;
             }
 
-            plugin.getMapRenderManager().registerRenderedTile(saveName, pos[0], pos[1], bytes);
+            mapRenderManager.submitRenderedTile(saveName, pos[0], pos[1], bytes);
         }
 
         plugin.logger.info("Finished pre-rendering "+ region.getPath());
-    }
-
-    private void compressTileToStream(Tile tile, OutputStream stream) throws IOException {
-        Tile.Block[][] topBlocks = tile.getTopBlocks();
-        int[] heightMap = tile.getHeightMap();
-
-        // generate palettes
-        List<String> palette = new ArrayList<>();
-        HashMap<String, Integer> indexes = new HashMap<>();
-        List<String> biomesPalette = new ArrayList<>();
-        HashMap<String, Integer> biomesIndexes = new HashMap<>();
-        for(int z = 0; z < 16; z++) {
-            for(int x = 0; x < 16; x++) {
-                Tile.Block block = topBlocks[z][x];
-
-                String id = block.id;
-                if(!indexes.containsKey(id)) {
-                    palette.add(id);
-                    indexes.put(id, palette.size() - 1);
-                }
-
-                String biome = block.biome;
-                if(!biomesIndexes.containsKey(biome)) {
-                    biomesPalette.add(biome);
-                    biomesIndexes.put(biome, biomesPalette.size() - 1);
-                }
-            }
-        }
-
-        // generate block data and biomes data
-        int[] blockData = new int[256];
-        int[] biomesData = new int[256];
-        for(int z = 0; z < 16; z++) {
-            for(int x = 0; x < 16; x++) {
-                int index = z * 16 + x;
-                Tile.Block block = topBlocks[z][x];
-                blockData[index] = indexes.get(block.id);
-                biomesData[index] = biomesIndexes.get(block.biome);
-            }
-        }
-        long[] bitpackedBlockData = AnvilUtility.bitpack(blockData, AnvilUtility.paletteSizeToBitsSize(palette.size(), 4));
-        long[] bitpackedBiomesData = biomesPalette.size() > 1 ? AnvilUtility.bitpack(biomesData, AnvilUtility.paletteSizeToBitsSize(biomesPalette.size())) : new long[] { 0L };
-
-        // pack height map
-        long[] bitpackedHeightMap = AnvilUtility.bitpack(heightMap, 9);
-
-        // start writing to output stream
-        DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(stream));
-        dos.write(DATA_MAGIC);
-
-        // write palette part
-        dos.writeShort(palette.size());
-        for(String id : palette) {
-            byte[] idBytes = id.getBytes(StandardCharsets.UTF_8);
-            dos.writeByte(idBytes.length & 0xff);
-            dos.write(idBytes);
-        }
-
-        // write block data part
-        dos.writeShort(bitpackedBlockData.length);
-        for(long data : bitpackedBlockData) {
-            dos.writeLong(data);
-        }
-
-        // write height map part
-        dos.writeShort(bitpackedHeightMap.length);
-        for(long data : bitpackedHeightMap) {
-            dos.writeLong(data);
-        }
-
-        // write biomes palette part
-        dos.writeShort(biomesPalette.size());
-        for(String biome : biomesPalette) {
-            byte[] biomeBytes = biome.getBytes(StandardCharsets.UTF_8);
-            dos.writeByte(biomeBytes.length & 0xff);
-            dos.write(biomeBytes);
-        }
-
-        // write biomes data part
-        dos.writeShort(bitpackedBiomesData.length);
-        for(long data : bitpackedBiomesData) {
-            dos.writeLong(data);
-        }
-
-        dos.flush();
     }
 }

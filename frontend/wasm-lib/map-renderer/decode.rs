@@ -5,8 +5,8 @@ use crate::utils::{bitunpack, palette_size_to_bits_size};
 pub const TILE_SIDE: usize = 16;
 pub const TILE_BLOCKS: usize = TILE_SIDE * TILE_SIDE;
 
-const MAGIC: [u8; 4] = *b"OMAP";
-const BUNDLE_MAGIC: [u8; 5] = *b"OOMAP";
+const MAGIC: [u8; 5] = *b"OTILE";
+const BUNDLE_MAGIC: [u8; 6] = *b"OTILES";
 const HEIGHT_BITS: u32 = 9;
 
 #[derive(Debug)]
@@ -36,18 +36,19 @@ pub struct DecodedBundleEntry {
 pub fn decode_bundle(bytes: &[u8]) -> Result<Vec<DecodedBundleEntry>, DecodeError> {
     let mut cur = Cursor::new(bytes);
 
-    if cur.read_array::<5>()? != BUNDLE_MAGIC {
+    if cur.read_array::<6>()? != BUNDLE_MAGIC {
         return Err(DecodeError::BadMagic);
     }
 
     let tile_count = cur.read_u32()? as usize;
     let mut entries = Vec::with_capacity(tile_count);
     for _ in 0..tile_count {
-        let x = cur.read_i32()?;
-        let z = cur.read_i32()?;
-        let omap_len = cur.read_u32()? as usize;
-        let omap_bytes = cur.read_slice(omap_len)?;
-        let tile = decode(omap_bytes)?;
+        let packed = cur.read_i64()?;
+        let x = (packed >> 32) as i32;
+        let z = packed as i32;
+        let tile_len = cur.read_u32()? as usize;
+        let tile_bytes = cur.read_slice(tile_len)?;
+        let tile = decode(tile_bytes)?;
         entries.push(DecodedBundleEntry { x, z, tile });
     }
 
@@ -57,7 +58,7 @@ pub fn decode_bundle(bytes: &[u8]) -> Result<Vec<DecodedBundleEntry>, DecodeErro
 pub fn decode(bytes: &[u8]) -> Result<DecodedTile, DecodeError> {
     let mut cur = Cursor::new(bytes);
 
-    if cur.read_array::<4>()? != MAGIC {
+    if cur.read_array::<5>()? != MAGIC {
         return Err(DecodeError::BadMagic);
     }
 
@@ -158,12 +159,12 @@ impl<'a> Cursor<'a> {
         Ok(u32::from_be_bytes(self.read_array::<4>()?))
     }
 
-    fn read_i32(&mut self) -> Result<i32, DecodeError> {
-        Ok(i32::from_be_bytes(self.read_array::<4>()?))
-    }
-
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
         Ok(u64::from_be_bytes(self.read_array::<8>()?))
+    }
+
+    fn read_i64(&mut self) -> Result<i64, DecodeError> {
+        Ok(i64::from_be_bytes(self.read_array::<8>()?))
     }
 
     fn read_slice(&mut self, n: usize) -> Result<&'a [u8], DecodeError> {

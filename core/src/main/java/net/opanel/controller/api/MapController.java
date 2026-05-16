@@ -6,21 +6,18 @@ import io.javalin.http.HttpStatus;
 import net.opanel.OPanel;
 import net.opanel.controller.BaseController;
 import net.opanel.map.MapRenderManager;
+import net.opanel.map.TileCompressor;
 import net.opanel.utils.Utils;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class MapController extends BaseController {
-    private static final byte[] DATA_BUNDLE_MAGIC = "OOMAP".getBytes(StandardCharsets.US_ASCII);
-
     public MapController(OPanel plugin) {
         super(plugin);
     }
@@ -32,12 +29,12 @@ public class MapController extends BaseController {
             return;
         }
 
-        if(!Files.isDirectory(OPanel.MAP_DATA_PATH.resolve(saveName))) {
-            sendResponse(ctx, HttpStatus.NOT_FOUND, "Save directory not found.");
+        MapRenderManager manager = plugin.getMapRenderManager();
+        if(!manager.hasSave(saveName)) {
+            sendResponse(ctx, HttpStatus.NOT_FOUND, "Save not found.");
             return;
         }
 
-        MapRenderManager manager = plugin.getMapRenderManager();
         String etag = "\"avail-"+ manager.getIndexVersion(saveName) +"\"";
         ctx.header("Cache-Control", "private, max-age=5");
         if(handleEtag(ctx, etag)) {
@@ -86,8 +83,9 @@ public class MapController extends BaseController {
             return;
         }
 
-        if(!Files.isDirectory(OPanel.MAP_DATA_PATH.resolve(saveName))) {
-            sendResponse(ctx, HttpStatus.NOT_FOUND, "Save directory not found.");
+        MapRenderManager manager = plugin.getMapRenderManager();
+        if(!manager.hasSave(saveName)) {
+            sendResponse(ctx, HttpStatus.NOT_FOUND, "Save not found.");
             return;
         }
 
@@ -96,11 +94,8 @@ public class MapController extends BaseController {
         final int minZ = Math.min(z1, z2);
         final int maxZ = Math.max(z1, z2);
 
-        MapRenderManager manager = plugin.getMapRenderManager();
         Set<Long> coords = manager.getAvailableTileCoords(saveName);
-
-        List<int[]> presentCoords = new ArrayList<>();
-        List<byte[]> presentBytes = new ArrayList<>();
+        LinkedHashMap<Long, byte[]> presentTiles = new LinkedHashMap<>();
         for(int x = minX; x <= maxX; x++) {
             for(int z = minZ; z <= maxZ; z++) {
                 long packed = MapRenderManager.packCoord(x, z);
@@ -109,44 +104,33 @@ public class MapController extends BaseController {
                 byte[] bytes = manager.loadTileBytes(saveName, x, z);
                 if(bytes == null) continue;
 
-                presentCoords.add(new int[] { x, z });
-                presentBytes.add(bytes);
+                presentTiles.put(packed, bytes);
             }
         }
 
-        String etag = "\"tiles-"+ manager.getIndexVersion(saveName) +"-"+ computeBundleHash(presentCoords, presentBytes) +"\"";
+        String etag = "\"tiles-"+ manager.getIndexVersion(saveName) +"-"+ computeBundleHash(presentTiles) +"\"";
         ctx.header("Cache-Control", "private, max-age=10");
         if(handleEtag(ctx, etag)) {
             sendResponse(ctx, HttpStatus.NOT_MODIFIED);
             return;
         }
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try(DataOutputStream out = new DataOutputStream(baos)) {
-            out.write(DATA_BUNDLE_MAGIC);
-            out.writeInt(presentCoords.size());
-            for(int i = 0; i < presentCoords.size(); i++) {
-                int[] coord = presentCoords.get(i);
-                byte[] bytes = presentBytes.get(i);
-                out.writeInt(coord[0]);
-                out.writeInt(coord[1]);
-                out.writeInt(bytes.length);
-                out.write(bytes);
-            }
+        final byte[] tilesData;
+        try {
+            tilesData = TileCompressor.bundleTiles(presentTiles).toByteArray();
         } catch (IOException e) {
             e.printStackTrace();
             sendResponse(ctx, HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
             return;
         }
 
-        sendContent(ctx, baos.toByteArray(), ContentType.APPLICATION_OCTET_STREAM);
+        sendContent(ctx, tilesData, ContentType.APPLICATION_OCTET_STREAM);
     };
 
-    private static String computeBundleHash(List<int[]> coords, List<byte[]> bytes) {
-        StringBuilder sb = new StringBuilder(coords.size() * 16);
-        for(int i = 0; i < coords.size(); i++) {
-            int[] c = coords.get(i);
-            sb.append(c[0]).append(',').append(c[1]).append(':').append(bytes.get(i).length).append(';');
+    private static String computeBundleHash(LinkedHashMap<Long, byte[]> tiles) {
+        StringBuilder sb = new StringBuilder(tiles.size() * 16);
+        for(Map.Entry<Long, byte[]> entry : tiles.entrySet()) {
+            sb.append(entry.getKey()).append(':').append(entry.getValue().length).append(';');
         }
         return Utils.md5(sb.toString());
     }

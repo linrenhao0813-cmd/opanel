@@ -1,20 +1,20 @@
 use wasm_lib::decode::{decode, decode_bundle, DecodeError, TILE_BLOCKS};
 use wasm_lib::utils::{bitpack, palette_size_to_bits_size};
 
-fn build_oomap(entries: &[(i32, i32, Vec<u8>)]) -> Vec<u8> {
+fn build_otiles(entries: &[(i32, i32, Vec<u8>)]) -> Vec<u8> {
     let mut out = Vec::new();
-    out.extend_from_slice(b"OOMAP");
+    out.extend_from_slice(b"OTILES");
     out.extend_from_slice(&(entries.len() as u32).to_be_bytes());
     for (x, z, bytes) in entries {
-        out.extend_from_slice(&x.to_be_bytes());
-        out.extend_from_slice(&z.to_be_bytes());
+        let packed: i64 = ((*x as i64) << 32) | ((*z as i64) & 0xFFFF_FFFF);
+        out.extend_from_slice(&packed.to_be_bytes());
         out.extend_from_slice(&(bytes.len() as u32).to_be_bytes());
         out.extend_from_slice(bytes);
     }
     out
 }
 
-fn build_omap(
+fn build_otile(
     palette: &[&str],
     blocks: &[u16; TILE_BLOCKS],
     heights: &[u16; TILE_BLOCKS],
@@ -22,7 +22,7 @@ fn build_omap(
     biomes: &[u16; TILE_BLOCKS],
 ) -> Vec<u8> {
     let mut out = Vec::new();
-    out.extend_from_slice(b"OMAP");
+    out.extend_from_slice(b"OTILE");
 
     // palette part
     out.extend_from_slice(&(palette.len() as u16).to_be_bytes());
@@ -71,12 +71,12 @@ fn build_omap(
     out
 }
 
-fn build_omap_simple(
+fn build_otile_simple(
     palette: &[&str],
     blocks: &[u16; TILE_BLOCKS],
     heights: &[u16; TILE_BLOCKS],
 ) -> Vec<u8> {
-    build_omap(
+    build_otile(
         palette,
         blocks,
         heights,
@@ -99,7 +99,7 @@ fn round_trip_uniform_tile() {
         }
     }
 
-    let bytes = build_omap_simple(&palette, &blocks, &heights);
+    let bytes = build_otile_simple(&palette, &blocks, &heights);
     let tile = decode(&bytes).expect("decode ok");
 
     assert_eq!(tile.palette, vec!["minecraft:air".to_string(), "minecraft:stone".to_string()]);
@@ -122,7 +122,7 @@ fn round_trip_large_palette_uses_more_bits() {
     }
     let heights = [42u16; TILE_BLOCKS];
 
-    let bytes = build_omap_simple(&palette_refs, &blocks, &heights);
+    let bytes = build_otile_simple(&palette_refs, &blocks, &heights);
     let tile = decode(&bytes).expect("decode ok");
     assert_eq!(tile.palette.len(), 17);
     assert_eq!(tile.blocks, blocks);
@@ -133,7 +133,7 @@ fn round_trip_large_palette_uses_more_bits() {
 fn single_biome_uses_placeholder_long() {
     // biomes_palette.size() <= 1 → writer emits exactly one zero long; every
     // block must decode to biome index 0 regardless of the long's payload.
-    let bytes = build_omap_simple(
+    let bytes = build_otile_simple(
         &["minecraft:stone"],
         &[0u16; TILE_BLOCKS],
         &[64u16; TILE_BLOCKS],
@@ -155,7 +155,7 @@ fn multi_biome_packs_at_native_bits() {
         biomes[i] = (i % 2) as u16;
     }
 
-    let bytes = build_omap(
+    let bytes = build_otile(
         &["minecraft:stone"],
         &[0u16; TILE_BLOCKS],
         &[64u16; TILE_BLOCKS],
@@ -172,7 +172,7 @@ fn multi_biome_packs_at_native_bits() {
 
 #[test]
 fn bad_magic_errors() {
-    let mut bytes = build_omap_simple(
+    let mut bytes = build_otile_simple(
         &["minecraft:air"],
         &[0u16; TILE_BLOCKS],
         &[0u16; TILE_BLOCKS],
@@ -186,7 +186,7 @@ fn bad_magic_errors() {
 
 #[test]
 fn truncated_input_errors() {
-    let bytes = build_omap_simple(
+    let bytes = build_otile_simple(
         &["minecraft:air"],
         &[0u16; TILE_BLOCKS],
         &[0u16; TILE_BLOCKS],
@@ -201,7 +201,7 @@ fn truncated_input_errors() {
 
 #[test]
 fn bundle_empty_decodes_to_zero_entries() {
-    let bytes = build_oomap(&[]);
+    let bytes = build_otiles(&[]);
     let entries = decode_bundle(&bytes).expect("decode bundle ok");
     assert!(entries.is_empty());
 }
@@ -216,15 +216,15 @@ fn bundle_round_trip_multiple_tiles() {
         blocks_a[i] = (i % 2) as u16;
         heights_a[i] = i as u16;
     }
-    let omap_a = build_omap_simple(&palette, &blocks_a, &heights_a);
+    let tile_a = build_otile_simple(&palette, &blocks_a, &heights_a);
 
     let blocks_b = [1u16; TILE_BLOCKS];
     let heights_b = [256u16; TILE_BLOCKS];
-    let omap_b = build_omap_simple(&palette, &blocks_b, &heights_b);
+    let tile_b = build_otile_simple(&palette, &blocks_b, &heights_b);
 
-    let bytes = build_oomap(&[
-        (-3, 7, omap_a.clone()),
-        (100, -200, omap_b.clone()),
+    let bytes = build_otiles(&[
+        (-3, 7, tile_a.clone()),
+        (100, -200, tile_b.clone()),
     ]);
 
     let entries = decode_bundle(&bytes).expect("decode bundle ok");
@@ -243,7 +243,7 @@ fn bundle_round_trip_multiple_tiles() {
 
 #[test]
 fn bundle_bad_magic_errors() {
-    let mut bytes = build_oomap(&[]);
+    let mut bytes = build_otiles(&[]);
     bytes[0] = b'X';
     match decode_bundle(&bytes) {
         Err(DecodeError::BadMagic) => {}
@@ -253,13 +253,13 @@ fn bundle_bad_magic_errors() {
 
 #[test]
 fn bundle_truncated_errors() {
-    let omap = build_omap_simple(
+    let tile = build_otile_simple(
         &["minecraft:air"],
         &[0u16; TILE_BLOCKS],
         &[0u16; TILE_BLOCKS],
     );
-    let bytes = build_oomap(&[(0, 0, omap)]);
-    // chop off the last byte of the embedded omap payload
+    let bytes = build_otiles(&[(0, 0, tile)]);
+    // chop off the last byte of the embedded tile payload
     let truncated = &bytes[..bytes.len() - 1];
     match decode_bundle(truncated) {
         Err(DecodeError::Truncated) => {}

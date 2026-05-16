@@ -4,26 +4,28 @@ import net.opanel.OPanel;
 import net.opanel.common.OPanelSave;
 import net.opanel.common.OPanelWorldRegion;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 public class MapRenderManager {
+    private static final String OTILES_SUFFIX = ".otiles";
+    private static final String OTILES_TMP_SUFFIX = ".otiles.tmp";
+
     private final OPanel plugin;
     private final ExecutorService executor = Executors.newFixedThreadPool(
         Runtime.getRuntime().availableProcessors()
@@ -56,132 +58,96 @@ public class MapRenderManager {
             saveRegionMap.put(save.getName(), save.getRegions());
         }
 
-        // Walk MAP_DATA_PATH once to populate the available-tile index for every save dir that
-        // already has rendered tiles. This avoids a Files.list() on every getAvailableTiles call.
-        scanAllSavesOnDisk();
+        Set<String> bundleNames = getTileBundleNames();
 
-        if(!hasRenderedTiles()) {
-            renderAll();
-        }
-    }
-
-    private static final int PREHEAT_BATCH_SIZE = 2048;
-
-    private void scanAllSavesOnDisk() {
-        File mapDataDir = OPanel.MAP_DATA_PATH.toFile();
-        if(!mapDataDir.exists() || !mapDataDir.isDirectory()) return;
-
-        File[] saveDirs = mapDataDir.listFiles(File::isDirectory);
-        if(saveDirs == null) return;
-
-        // Only walk filenames to build the coord index. No file reads here
-        Map<String, Map<Long, Path>> tilesToPreheat = new HashMap<>();
-        for(File saveDir : saveDirs) {
-            String saveName = saveDir.getName();
-            Set<Long> coords = ConcurrentHashMap.newKeySet();
-            Map<Long, byte[]> bytesMap = new ConcurrentHashMap<>();
-            Map<Long, Path> entries = new HashMap<>();
-
-            try(Stream<Path> stream = Files.list(saveDir.toPath())) {
-                stream.forEach(path -> {
-                    if(!path.toFile().isFile()) return;
-
-                    String fileName = path.getFileName().toString();
-                    if(!fileName.endsWith(".omap")) return;
-
-                    String[] parts = fileName.split("\\.");
-                    if(parts.length != 3) return;
-
-                    final int x, z;
-                    try {
-                        x = Integer.parseInt(parts[0]);
-                        z = Integer.parseInt(parts[1]);
-                    } catch (NumberFormatException ignored) {
-                        return;
-                    }
-
-                    long packed = packCoord(x, z);
-                    coords.add(packed);
-                    entries.put(packed, path);
-                });
-            } catch (IOException e) {
-                e.printStackTrace();
-                continue;
+        for(Map.Entry<String, List<OPanelWorldRegion>> entry : saveRegionMap.entrySet()) {
+            String saveName = entry.getKey();
+            if(bundleNames.contains(saveName)) {
+                executor.execute(() -> loadTileBundle(saveName));
+            } else {
+                renderSave(saveName, entry.getValue());
             }
-
-            availableTilesIndex.put(saveName, coords);
-            tileBytesCache.put(saveName, bytesMap);
-            indexVersion.computeIfAbsent(saveName, k -> new AtomicLong(0L)).incrementAndGet();
-            tilesToPreheat.put(saveName, entries);
         }
-
-        plugin.logger.info("Indexed all map tiles, preheating bytes cache in background");
-
-        // Read all tile files with multithreading
-        submitPreheatTasks(tilesToPreheat);
     }
 
-    private void submitPreheatTasks(Map<String, Map<Long, Path>> tileEntries) {
+    private Set<String> getTileBundleNames() {
+        Set<String> bundleNames = new HashSet<>();
+        Path mapDataDir = OPanel.MAP_DATA_PATH;
+        if(!Files.isDirectory(mapDataDir)) return bundleNames;
+
+        try(Stream<Path> stream = Files.list(mapDataDir)) {
+            stream.forEach(path -> {
+                if(!Files.isRegularFile(path)) return;
+
+                String fileName = path.getFileName().toString();
+                if(!fileName.endsWith(OTILES_SUFFIX)) return;
+
+                String saveName = fileName.substring(0, fileName.length() - OTILES_SUFFIX.length());
+                bundleNames.add(saveName);
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return bundleNames;
+    }
+
+    private void loadTileBundle(String saveName) {
         long start = System.currentTimeMillis();
-        AtomicInteger remaining = new AtomicInteger(0);
+        Path bundlePath = OPanel.MAP_DATA_PATH.resolve(saveName + OTILES_SUFFIX);
+        try {
+            byte[] data = Files.readAllBytes(bundlePath);
+            Map<Long, byte[]> parsed = TileCompressor.parseBundle(data);
 
-        List<Runnable> chunkTasks = new ArrayList<>();
-        for(Map.Entry<String, Map<Long, Path>> e : tileEntries.entrySet()) {
-            String saveName = e.getKey();
-            Map<Long, Path> entries = e.getValue();
-            Map<Long, byte[]> bytesMap = tileBytesCache.get(saveName);
-            if(bytesMap == null || entries.isEmpty()) continue;
+            Map<Long, byte[]> bytesMap = new ConcurrentHashMap<>(parsed);
+            Set<Long> coords = ConcurrentHashMap.newKeySet();
+            coords.addAll(parsed.keySet());
 
-            List<Map.Entry<Long, Path>> entryList = new ArrayList<>(entries.entrySet());
-            for(int i = 0; i < entryList.size(); i += PREHEAT_BATCH_SIZE) {
-                List<Map.Entry<Long, Path>> slice = entryList.subList(i, Math.min(i + PREHEAT_BATCH_SIZE, entryList.size()));
-                remaining.incrementAndGet();
-                chunkTasks.add(() -> {
-                    for(Map.Entry<Long, Path> entry : slice) {
-                        long packed = entry.getKey();
-                        if(bytesMap.containsKey(packed)) continue; // already filled by registerRenderedTile
-                        try {
-                            bytesMap.put(packed, Files.readAllBytes(entry.getValue()));
-                        } catch (IOException ex) {
-                            ex.printStackTrace();
-                        }
-                    }
-                    if(remaining.decrementAndGet() == 0) {
-                        long elapsed = System.currentTimeMillis() - start;
-                        plugin.logger.info("Map tiles bytes cache preheat completed in "+ elapsed +"ms");
-                    }
-                });
-            }
+            tileBytesCache.put(saveName, bytesMap);
+            availableTilesIndex.put(saveName, coords);
+            indexVersion.computeIfAbsent(saveName, k -> new AtomicLong(0L)).incrementAndGet();
+
+            long elapsed = System.currentTimeMillis() - start;
+            plugin.logger.info("Loaded "+ parsed.size() +" tiles for save '"+ saveName +"' in "+ elapsed +"ms");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+    }
 
-        if(chunkTasks.isEmpty()) {
-            plugin.logger.info("Map tiles bytes cache preheat completed: nothing to preheat");
+    private void writeTileBundle(String saveName) {
+        Map<Long, byte[]> bytesMap = tileBytesCache.get(saveName);
+        if(bytesMap == null || bytesMap.isEmpty()) {
+            plugin.logger.info("No tiles to persist for save '"+ saveName +"'");
             return;
         }
 
-        for(Runnable task : chunkTasks) {
-            executor.execute(task);
+        Map<Long, byte[]> snapshot = new HashMap<>(bytesMap);
+        try {
+            byte[] payload = TileCompressor.bundleTiles(snapshot).toByteArray();
+            Path tmp = OPanel.TMP_DIR_PATH.resolve(saveName + OTILES_TMP_SUFFIX);
+            Path dst = OPanel.MAP_DATA_PATH.resolve(saveName + OTILES_SUFFIX);
+            Files.write(tmp, payload);
+            Files.move(tmp, dst, StandardCopyOption.REPLACE_EXISTING);
+            plugin.logger.info("Wrote "+ snapshot.size() +" tiles for save '"+ saveName +"'");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    public boolean hasRenderedTiles() {
-        File mapDataDir = OPanel.MAP_DATA_PATH.toFile();
-        return mapDataDir.exists() && mapDataDir.isDirectory() && mapDataDir.list().length > 0;
-    }
+    private void renderSave(String saveName, List<OPanelWorldRegion> regions) {
+        if(regions.isEmpty()) return;
 
-    public void renderAll() {
-        for(Map.Entry<String, List<OPanelWorldRegion>> entry : saveRegionMap.entrySet()) {
-            for(OPanelWorldRegion region : entry.getValue()) {
-                executor.execute(new TileRenderTask(plugin, entry.getKey(), region));
-            }
-        }
+        CompletableFuture<?>[] arr = regions.stream()
+            .map(region -> CompletableFuture.runAsync(new TileRenderTask(plugin, saveName, region), executor))
+            .toArray(CompletableFuture[]::new);
+
+        CompletableFuture.allOf(arr).thenRunAsync(() -> writeTileBundle(saveName), executor);
     }
 
     public Future<?> renderTile(String saveName, OPanelWorldRegion region, Tile tile) {
         return executor.submit(new TileRenderTask(plugin, saveName, region, tile));
     }
 
-    public void registerRenderedTile(String saveName, int x, int z, byte[] bytes) {
+    public void submitRenderedTile(String saveName, int x, int z, byte[] bytes) {
         long packed = packCoord(x, z);
         availableTilesIndex
             .computeIfAbsent(saveName, k -> ConcurrentHashMap.newKeySet())
@@ -205,22 +171,20 @@ public class MapRenderManager {
         return v == null ? 0L : v.get();
     }
 
-    public byte[] loadTileBytes(String saveName, int x, int z) {
-        long packed = packCoord(x, z);
-        Set<Long> coords = availableTilesIndex.get(saveName);
-        if(coords == null || !coords.contains(packed)) return null;
+    public boolean hasSave(String saveName) {
+        return availableTilesIndex.containsKey(saveName);
+    }
 
-        Map<Long, byte[]> bytesMap = tileBytesCache.computeIfAbsent(saveName, k -> new ConcurrentHashMap<>());
-        return bytesMap.computeIfAbsent(packed, k -> {
-            Path tilePath = OPanel.MAP_DATA_PATH.resolve(saveName).resolve(x +"."+ z +".omap");
-            if(!Files.isRegularFile(tilePath)) return null;
-            try {
-                return Files.readAllBytes(tilePath);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return null;
-            }
-        });
+    /**
+     * Returns cached tile bytes for the given coord, or null if not yet rendered/loaded.
+     * During startup, the per-save bundle is loaded asynchronously — callers may see a
+     * transient null until the load completes; the frontend re-polls as
+     * {@link #getIndexVersion(String)} advances.
+     */
+    public byte[] loadTileBytes(String saveName, int x, int z) {
+        Map<Long, byte[]> bytesMap = tileBytesCache.get(saveName);
+        if(bytesMap == null) return null;
+        return bytesMap.get(packCoord(x, z));
     }
 
     public void shutdown() {

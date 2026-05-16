@@ -2,9 +2,9 @@ use wasm_lib::decode::{decode, TILE_BLOCKS, TILE_SIDE};
 use wasm_lib::render::{render, TILE_RGBA_LEN};
 use wasm_lib::utils::{bitpack, palette_size_to_bits_size};
 
-fn build_omap(palette: &[&str], blocks: &[u16; TILE_BLOCKS], heights: &[u16; TILE_BLOCKS]) -> Vec<u8> {
+fn build_otile(palette: &[&str], blocks: &[u16; TILE_BLOCKS], heights: &[u16; TILE_BLOCKS]) -> Vec<u8> {
     let mut out = Vec::new();
-    out.extend_from_slice(b"OMAP");
+    out.extend_from_slice(b"OTILE");
 
     // palette part
     out.extend_from_slice(&(palette.len() as u16).to_be_bytes());
@@ -48,7 +48,7 @@ fn pixel(buf: &[u8], x: usize, z: usize) -> [u8; 4] {
 
 #[test]
 fn rendered_buffer_has_expected_size() {
-    let bytes = build_omap(
+    let bytes = build_otile(
         &["minecraft:stone"],
         &[0u16; TILE_BLOCKS],
         &[64u16; TILE_BLOCKS],
@@ -61,7 +61,7 @@ fn rendered_buffer_has_expected_size() {
 
 #[test]
 fn air_pixels_are_fully_transparent() {
-    let bytes = build_omap(
+    let bytes = build_otile(
         &["minecraft:air"],
         &[0u16; TILE_BLOCKS],
         &[0u16; TILE_BLOCKS],
@@ -78,7 +78,7 @@ fn flat_stone_uses_normal_shade() {
     // All stone, all the same height → every pixel should use shade 1
     // (normal) and edge row z=0 also gets shade 1 by convention.
     // Shade 1 for stone from colors.txt: 100 100 100 255.
-    let bytes = build_omap(
+    let bytes = build_otile(
         &["minecraft:stone"],
         &[0u16; TILE_BLOCKS],
         &[64u16; TILE_BLOCKS],
