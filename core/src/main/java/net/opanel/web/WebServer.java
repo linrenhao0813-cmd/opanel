@@ -17,6 +17,7 @@ import net.opanel.controller.openapi.OpenMonitorController;
 import net.opanel.controller.openapi.OpenPlayersController;
 import net.opanel.controller.openapi.OpenPluginsController;
 import net.opanel.endpoint.InventoryEndpoint;
+import net.opanel.endpoint.MapEndpoint;
 import net.opanel.endpoint.PlayersEndpoint;
 import net.opanel.endpoint.TerminalEndpoint;
 
@@ -86,6 +87,7 @@ public class WebServer {
         app.ws("/socket/players", ws -> new PlayersEndpoint(app, ws, plugin));
         app.ws("/socket/inventory/{uuid}", ws -> new InventoryEndpoint(app, ws, plugin));
         app.ws("/socket/terminal", ws -> new TerminalEndpoint(app, ws, plugin));
+        app.ws("/socket/map", ws -> new MapEndpoint(app, ws, plugin));
 
         // API Controllers
         BeforeController beforeController = new BeforeController(plugin);
@@ -179,7 +181,8 @@ public class WebServer {
             });
             path("map", () -> {
                 get("{saveName}", mapController.getAvailableTiles);
-                get("{saveName}/tiles", mapController.getTiles);
+                post("{saveName}/tiles-range", mapController.getTilesInRange);
+                post("{saveName}/tiles", mapController.getTiles);
             });
             get("monitor", monitorController.getMonitor);
             path("players", () -> {

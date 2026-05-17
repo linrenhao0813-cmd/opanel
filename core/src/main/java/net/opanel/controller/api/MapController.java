@@ -56,30 +56,20 @@ public class MapController extends BaseController {
         sendResponse(ctx, obj);
     };
 
-    public Handler getTiles = ctx -> {
+    public Handler getTilesInRange = ctx -> {
         final String saveName = ctx.pathParam("saveName");
         if(!Utils.isSafeFileName(saveName)) {
             sendResponse(ctx, HttpStatus.BAD_REQUEST, "Illegal save name.");
             return;
         }
 
-        String x1Str = ctx.queryParam("x1");
-        String z1Str = ctx.queryParam("z1");
-        String x2Str = ctx.queryParam("x2");
-        String z2Str = ctx.queryParam("z2");
-        if(x1Str == null || z1Str == null || x2Str == null || z2Str == null) {
-            sendResponse(ctx, HttpStatus.BAD_REQUEST, "Missing one of the query params x1, z1, x2, z2.");
-            return;
-        }
-
-        final int x1, z1, x2, z2;
-        try {
-            x1 = Integer.parseInt(x1Str);
-            z1 = Integer.parseInt(z1Str);
-            x2 = Integer.parseInt(x2Str);
-            z2 = Integer.parseInt(z2Str);
-        } catch (NumberFormatException e) {
-            sendResponse(ctx, HttpStatus.BAD_REQUEST, "Invalid chunk coordinates.");
+        TilesRangeRequestType reqBody = ctx.bodyAsClass(TilesRangeRequestType.class);
+        Integer x1 = reqBody.x1;
+        Integer z1 = reqBody.z1;
+        Integer x2 = reqBody.x2;
+        Integer z2 = reqBody.z2;
+        if(x1 == null || z1 == null || x2 == null || z2 == null) {
+            sendResponse(ctx, HttpStatus.BAD_REQUEST, "Incomplete range coords.");
             return;
         }
 
@@ -127,11 +117,65 @@ public class MapController extends BaseController {
         sendContent(ctx, tilesData, ContentType.APPLICATION_OCTET_STREAM);
     };
 
+    public Handler getTiles = ctx -> {
+        final String saveName = ctx.pathParam("saveName");
+        if(!Utils.isSafeFileName(saveName)) {
+            sendResponse(ctx, HttpStatus.BAD_REQUEST, "Illegal save name.");
+            return;
+        }
+
+        TileListRequestType reqBody = ctx.bodyAsClass(TileListRequestType.class);
+        List<int[]> tileCoords = reqBody.tileCoords;
+        if(tileCoords == null) {
+            sendResponse(ctx, HttpStatus.BAD_REQUEST, "Tile coordinates is missing.");
+            return;
+        }
+
+        MapRenderManager manager = plugin.getMapRenderManager();
+        if(!manager.hasSave(saveName)) {
+            sendResponse(ctx, HttpStatus.NOT_FOUND, "Save not found.");
+            return;
+        }
+
+        Set<Long> coords = manager.getAvailableTileCoords(saveName);
+        LinkedHashMap<Long, byte[]> presentTiles = new LinkedHashMap<>();
+        for(int[] tileCoord : tileCoords) {
+            int x = tileCoord[0];
+            int z = tileCoord[1];
+            long packed = MapRenderManager.packCoord(x, z);
+            if(!coords.contains(packed)) continue;
+
+            byte[] bytes = manager.loadTileBytes(saveName, x, z);
+            if(bytes == null) continue;
+
+            presentTiles.put(packed, bytes);
+        }
+
+        final byte[] tilesData;
+        try {
+            tilesData = TileCompressor.bundleTiles(presentTiles).toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+            sendResponse(ctx, HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+            return;
+        }
+
+        sendContent(ctx, tilesData, ContentType.APPLICATION_OCTET_STREAM);
+    };
+
     private static String computeBundleHash(LinkedHashMap<Long, byte[]> tiles) {
         StringBuilder sb = new StringBuilder(tiles.size() * 16);
         for(Map.Entry<Long, byte[]> entry : tiles.entrySet()) {
             sb.append(entry.getKey()).append(':').append(entry.getValue().length).append(';');
         }
         return Utils.md5(sb.toString());
+    }
+
+    private static class TilesRangeRequestType {
+        Integer x1, z1, x2, z2;
+    }
+
+    private static class TileListRequestType {
+        List<int[]> tileCoords;
     }
 }

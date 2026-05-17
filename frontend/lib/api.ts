@@ -69,6 +69,24 @@ export async function sendPostRequest<R, T = any>(route: string, body?: T, withC
   })).data as APIResponse<R>;
 }
 
+export async function sendPostBlobRequest<T = any>(route: string, body?: T, withCredentials = true): Promise<Blob> {
+  const data = body ? (
+    typeof body === "string"
+    ? body
+    : JSON.stringify(body)
+  ) : "";
+  
+  return (await axios.request({
+    method: "post",
+    maxBodyLength: Infinity,
+    url: apiUrl + route,
+    withCredentials,
+    responseType: "blob",
+    headers: { "Content-Type": "text/plain" },
+    data
+  })).data;
+}
+
 export async function sendPatchRequest<R, T = any>(route: string, body?: T, withCredentials = true): Promise<APIResponse<R>> {
   const data = body ? (
     typeof body === "string"

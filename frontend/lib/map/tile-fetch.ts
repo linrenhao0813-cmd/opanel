@@ -1,4 +1,4 @@
-import { sendGetBlobRequest, sendGetRequest } from "@/lib/api";
+import { sendGetRequest, sendPostBlobRequest } from "@/lib/api";
 
 export async function fetchAvailableTiles(saveName: string): Promise<[number, number][]> {
   try {
@@ -23,8 +23,24 @@ export async function fetchTilesInRange(
   x2: number, z2: number,
 ): Promise<ArrayBuffer | null> {
   try {
-    const blob = await sendGetBlobRequest(
-      `/api/map/${encodeURIComponent(saveName)}/tiles?x1=${x1}&z1=${z1}&x2=${x2}&z2=${z2}`
+    const blob = await sendPostBlobRequest(
+      `/api/map/${encodeURIComponent(saveName)}/tiles-range`,
+      { x1, z1, x2, z2 }
+    );
+    return await blob.arrayBuffer();
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchTiles(
+  saveName: string,
+  coords: [number, number][]
+): Promise<ArrayBuffer | null> {
+  try {
+    const blob = await sendPostBlobRequest(
+      `/api/map/${encodeURIComponent(saveName)}/tiles`,
+      { tileCoords: coords }
     );
     return await blob.arrayBuffer();
   } catch {

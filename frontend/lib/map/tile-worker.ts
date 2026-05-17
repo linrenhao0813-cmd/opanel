@@ -1,4 +1,5 @@
 import type {
+  ChunksFlushMessage,
   InitMessage,
   MainToWorker,
   RenderSettings,
@@ -14,7 +15,7 @@ import {
   init_panic_hook,
   render_tile_bundle_rgba,
 } from "@/wasm-lib/pkg/wasm_lib.js";
-import { fetchAvailableTiles, fetchTilesInRange } from "./tile-fetch";
+import { fetchAvailableTiles, fetchTiles, fetchTilesInRange } from "./tile-fetch";
 
 const TILE_BLOCKS = 16;
 const MACRO_BLOCKS_PER_TILE = 16;
@@ -60,6 +61,8 @@ class TileWorker {
           return this.handleViewport(data);
         case "requestTiles":
           return this.handleRequestTiles(data);
+        case "chunksFlush":
+          return this.handleChunksFlush(data);
       }
     };
   }
@@ -84,8 +87,8 @@ class TileWorker {
     self.postMessage({ type: "ready" } satisfies WorkerToMain);
   }
 
-  private handleSetSettings(msg: SetSettingsMessage) {
-    this.settings = msg.settings;
+  private handleSetSettings({ settings }: SetSettingsMessage) {
+    this.settings = settings;
     this.tileCache.clear();
     this.macroCanvases.clear();
     self.postMessage({ type: "tilesLoaded", value: this.tileCache.size } satisfies WorkerToMain);
@@ -95,25 +98,35 @@ class TileWorker {
     }
   }
 
-  private handleSetFpsReporting(msg: SetFpsReportingMessage) {
-    if(msg.enabled && !this.fpsReportTimer) {
+  private handleSetFpsReporting({ enabled }: SetFpsReportingMessage) {
+    if(enabled && !this.fpsReportTimer) {
       this.fpsReportTimer = setInterval(() => this.reportFps(), FPS_REPORT_INTERVAL_MS);
-    } else if(!msg.enabled && this.fpsReportTimer) {
+    } else if(!enabled && this.fpsReportTimer) {
       clearInterval(this.fpsReportTimer);
       this.fpsReportTimer = null;
       this.frameTimes.length = 0;
     }
   }
 
-  private handleViewport(msg: ViewportMessage) {
-    this.currentViewport = msg.viewport;
-    this.render(msg.viewport);
+  private handleViewport({ viewport }: ViewportMessage) {
+    this.currentViewport = viewport;
+    this.render(viewport);
   }
 
-  private handleRequestTiles(msg: RequestTilesMessage) {
-    this.currentViewport = msg.viewport;
-    this.render(msg.viewport);
-    this.loadTilesInBounds(msg.viewport);
+  private handleRequestTiles({ viewport }: RequestTilesMessage) {
+    this.currentViewport = viewport;
+    this.render(viewport);
+    this.loadTilesInBounds(viewport);
+  }
+
+  private handleChunksFlush({ flushedChunks }: ChunksFlushMessage) {
+    if(!this.currentViewport) return;
+
+    const chunksToReload = flushedChunks.filter(([chunkX, chunkZ]) => (
+      TileWorker.inBounds(this.currentViewport!, chunkX, chunkZ)
+    ));
+
+    this.forceLoadTiles(chunksToReload);
   }
 
   private async reloadAvailableTiles() {
@@ -153,7 +166,7 @@ class TileWorker {
       const bytes = await fetchTilesInRange(this.saveName, xMin, zMin, xMax, zMax);
       if(!bytes) return;
 
-      await this.parseTileBundle(bytes);
+      await this.cacheTileBundle(bytes);
     } catch {
       //
     } finally {
@@ -164,29 +177,40 @@ class TileWorker {
     }
   }
 
-  private async loadSingleTile(chunkX: number, chunkZ: number) {
-    const key = getTileKey(this.saveName, chunkX, chunkZ);
-    if(this.inflight.has(key)) return;
-    this.inflight.add(key);
+  private async forceLoadTiles(tileCoords: [number, number][]) {
+    // const key = getTileKey(this.saveName, chunkX, chunkZ);
+    // if(this.inflight.has(key)) return;
+    // this.inflight.add(key);
+    const pendingKeys: string[] = [];
+    const coords: [number, number][] = [];
+    for(const [x, z] of tileCoords) {
+      const key = getTileKey(this.saveName, x, z);
+      if(this.inflight.has(key)) continue;
 
-    const bKey = getTileBundleKey(this.saveName, chunkX, chunkZ, chunkX, chunkZ);
-    if(this.inflightBundles.has(bKey)) return;
-    this.inflightBundles.add(bKey);
+      pendingKeys.push(key);
+      coords.push([x, z]);
+    }
+    if(pendingKeys.length === 0) return;
+
+    for(const key of pendingKeys) {
+      this.inflight.add(key);
+    }
 
     try {
-      const bytes = await fetchTilesInRange(this.saveName, chunkX, chunkZ, chunkX, chunkZ);
+      const bytes = await fetchTiles(this.saveName, coords);
       if(!bytes) return;
 
-      await this.parseTileBundle(bytes);
+      await this.cacheTileBundle(bytes, false);
     } catch {
       //
     } finally {
-      this.inflight.delete(key);
-      this.inflightBundles.delete(bKey);
+      for(const key of pendingKeys) {
+        this.inflight.delete(key);
+      }
     }
   }
 
-  private async parseTileBundle(bytes: ArrayBuffer) {
+  private async cacheTileBundle(bytes: ArrayBuffer, useCache = true) {
     const bundle = render_tile_bundle_rgba(
       new Uint8Array(bytes),
       this.settings.biomeColoring,
@@ -197,7 +221,7 @@ class TileWorker {
       const x = bundle.x_at(i);
       const z = bundle.z_at(i);
       const key = getTileKey(this.saveName, x, z);
-      if(this.tileCache.has(key)) continue;
+      if(useCache && this.tileCache.has(key)) continue;
 
       const rgba = bundle.rgba_at(i);
       const clamped = new Uint8ClampedArray(rgba);

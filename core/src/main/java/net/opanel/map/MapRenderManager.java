@@ -8,6 +8,7 @@ import net.opanel.common.OPanelWorldRegion;
 import net.opanel.event.EventManager;
 import net.opanel.event.EventType;
 import net.opanel.event.OPanelChunkDirtyEvent;
+import net.opanel.event.OPanelDirtyChunksFlushEvent;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -110,6 +111,7 @@ public class MapRenderManager {
             List<Long> batch = dirtyChunkTracker.drain(saveName, MAX_CHUNKS_PER_FLUSH);
             if(batch.isEmpty()) continue;
 
+            Set<int[]> flushedChunks = new HashSet<>();
             for(long packed : batch) {
                 final int chunkX = unpackX(packed);
                 final int chunkZ = unpackZ(packed);
@@ -118,7 +120,9 @@ public class MapRenderManager {
 
                 renderTile(saveName, chunkX, chunkZ, tile)
                     .thenRunAsync(() -> scheduleBundleWrite(saveName), executor);
+                flushedChunks.add(new int[] { chunkX, chunkZ });
             }
+            EventManager.get().emit(EventType.DIRTY_CHUNKS_FLUSH, new OPanelDirtyChunksFlushEvent(saveName, flushedChunks));
         }
     }
 

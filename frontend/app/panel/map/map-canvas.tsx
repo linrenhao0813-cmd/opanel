@@ -12,6 +12,8 @@ import {
 } from "react";
 import { useMapTiles } from "@/hooks/use-map-tiles";
 import { useLatestRef } from "@/hooks/use-latest-ref";
+import { useWebSocket } from "@/hooks/use-websocket";
+import { type ChunksFlushedPayload, MapClient } from "@/lib/ws/map";
 
 const TILE_BLOCKS = 16;
 const MIN_ZOOM = 1.75;
@@ -49,6 +51,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function MapCanvas
   const onFpsChangeRef = useLatestRef(onFpsChange);
   const onTilesLoadedChangeRef = useLatestRef(onTilesLoadedChange);
   const onResizeRef = useLatestRef(onResize);
+  const saveRef = useLatestRef(save);
+  const client = useWebSocket(MapClient);
 
   const { viewportRef, postViewport, postRequestTiles, setViewportSize } = useMapTiles({
     postWorkerMessage: (msg) => workerRef.current?.postMessage(msg),
@@ -185,6 +189,17 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function MapCanvas
       workerRef.current = null;
     };
   }, [initWorker]);
+
+  useEffect(() => {
+    if(!client) return;
+
+    client.subscribe("chunks-flush", ({ saveName, flushedChunks }: ChunksFlushedPayload) => {
+      if(saveName !== saveRef.current) return;
+
+      workerRef.current?.postMessage({ type: "chunksFlush", flushedChunks } satisfies MainToWorker);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client]);
 
   useEffect(() => {
     if(!workerRef.current) return;

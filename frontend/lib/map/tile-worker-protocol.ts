@@ -57,6 +57,11 @@ export interface RequestTilesMessage {
   viewport: Viewport
 }
 
+export interface ChunksFlushMessage {
+  type: "chunksFlush"
+  flushedChunks: [number, number][]
+}
+
 export interface ReadyMessage {
   type: "ready"
 }
@@ -76,6 +81,10 @@ export type MainToWorker =
   | SetSettingsMessage
   | SetFpsReportingMessage
   | ViewportMessage
-  | RequestTilesMessage;
+  | RequestTilesMessage
+  | ChunksFlushMessage;
 
-export type WorkerToMain = ReadyMessage | FpsMessage | TilesLoadedMessage;
+export type WorkerToMain =
+  | ReadyMessage
+  | FpsMessage
+  | TilesLoadedMessage;
