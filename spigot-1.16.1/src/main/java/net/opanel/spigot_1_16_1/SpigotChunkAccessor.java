@@ -1,44 +1,26 @@
-package net.opanel.bukkit_helper;
+package net.opanel.spigot_1_16_1;
 
-import net.opanel.common.OPanelChunkAccessor;
+import net.opanel.annotation.Rewrite;
+import net.opanel.bukkit_helper.BaseBukkitChunkAccessor;
 import net.opanel.map.Tile;
 import net.opanel.utils.AnvilUtility;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
-public class BaseBukkitChunkAccessor implements OPanelChunkAccessor {
-    private static final int SYNC_CALL_TIMEOUT_SECONDS = 5;
-    protected static final String FALLBACK_BIOME = "minecraft:plains";
-
-    protected final JavaPlugin plugin;
-
-    public BaseBukkitChunkAccessor(JavaPlugin plugin) {
-        this.plugin = plugin;
+public class SpigotChunkAccessor extends BaseBukkitChunkAccessor {
+    public SpigotChunkAccessor(Main plugin) {
+        super(plugin);
     }
 
+    @Rewrite
     @Override
-    public Tile readLiveTile(String saveName, int chunkX, int chunkZ) {
-        try {
-            Future<Tile> future = Bukkit.getScheduler().callSyncMethod(plugin, () ->
-                readOnMainThread(saveName, chunkX, chunkZ)
-            );
-            return future.get(SYNC_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     protected Tile readOnMainThread(String saveName, int chunkX, int chunkZ) {
         World world = plugin.getServer().getWorld(saveName);
         if(world == null) return null;
@@ -49,7 +31,7 @@ public class BaseBukkitChunkAccessor implements OPanelChunkAccessor {
         Chunk chunk = world.getChunkAt(chunkX, chunkZ);
         ChunkSnapshot snap = chunk.getChunkSnapshot(true, true, false);
 
-        final int minY = -64;
+        final int minY = 0;
         final int maxY = world.getMaxHeight();
         final int firstSection = minY >> 4;
         final int lastSection = (maxY - 1) >> 4;
@@ -64,8 +46,8 @@ public class BaseBukkitChunkAccessor implements OPanelChunkAccessor {
         for(int z = 0; z < 16; z++) {
             for(int x = 0; x < 16; x++) {
                 int highest = snap.getHighestBlockYAt(x, z);
-                // Tile.getHeight() returns storedHeight + minY - 1, so invert.
-                int stored = highest + 1 - minY;
+                // Tile.getHeight() returns storedHeight + minY, so invert.
+                int stored = highest - minY;
                 if(stored < 0) stored = 0;
                 if(stored > 511) stored = 511; // 9-bit ceiling
                 heightMap[z * 16 + x] = stored;
@@ -73,9 +55,11 @@ public class BaseBukkitChunkAccessor implements OPanelChunkAccessor {
         }
         long[] packedHeightMap = AnvilUtility.bitpack(heightMap, 9);
 
-        return new Tile(chunkX, chunkZ, sections, packedHeightMap, true);
+        return new Tile(chunkX, chunkZ, sections, packedHeightMap, false);
     }
 
+    @Rewrite
+    @Override
     protected Tile.Section buildSection(ChunkSnapshot snap, int sectionY) {
         List<String> palette = new ArrayList<>();
         Map<String, Integer> paletteIndex = new HashMap<>();
@@ -100,26 +84,18 @@ public class BaseBukkitChunkAccessor implements OPanelChunkAccessor {
         long[] packedBlockStates = AnvilUtility.bitpack(blockStates, blockBits);
 
         // Biomes are stored on a 4×4×4 grid (64 cells per section).
+        // OPanel map in 1.16.x doesn't support multi-biome rendering,
+        // just render the plains biome
         List<String> biomesPalette = new ArrayList<>();
+        biomesPalette.add(FALLBACK_BIOME);
+
         Map<String, Integer> biomesIndex = new HashMap<>();
         int[] biomes = new int[64];
         for(int by = 0; by < 4; by++) {
             int worldY = sectionY * 16 + by * 4;
             for(int bz = 0; bz < 4; bz++) {
                 for(int bx = 0; bx < 4; bx++) {
-                    String biomeKey;
-                    try {
-                        biomeKey = snap.getBiome(bx * 4, worldY, bz * 4).getKey().toString();
-                    } catch (Throwable t) {
-                        biomeKey = FALLBACK_BIOME;
-                    }
-                    Integer idx = biomesIndex.get(biomeKey);
-                    if(idx == null) {
-                        idx = biomesPalette.size();
-                        biomesPalette.add(biomeKey);
-                        biomesIndex.put(biomeKey, idx);
-                    }
-                    biomes[by * 16 + bz * 4 + bx] = idx;
+                    biomes[by * 16 + bz * 4 + bx] = 0;
                 }
             }
         }

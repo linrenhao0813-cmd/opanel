@@ -25,8 +25,12 @@ import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
 public class FoliaServer extends BaseBukkitServer implements OPanelServer, BukkitConfigFeature {
+    private final FoliaChunkAccessor chunkAccessor;
+
     public FoliaServer(Main plugin, Server server) {
         super(plugin, server);
+
+        this.chunkAccessor = new FoliaChunkAccessor(plugin);
     }
 
     @Rewrite
@@ -276,5 +280,10 @@ public class FoliaServer extends BaseBukkitServer implements OPanelServer, Bukki
             FileOpsHelperApi.scheduleDelete(List.of(filePath.toString()));
             throw new ActLaterException();
         }
+    }
+
+    @Override
+    public OPanelChunkAccessor getChunkAccessor() {
+        return chunkAccessor;
     }
 }

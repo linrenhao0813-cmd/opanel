@@ -5,7 +5,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.tree.CommandNode;
 import net.opanel.annotation.Rewrite;
 import net.opanel.bukkit_helper.BaseBukkitServer;
-import net.opanel.bukkit_helper.BaseBukkitChunkAccessor;
 import net.opanel.bukkit_helper.utils.BukkitUtils;
 import net.opanel.common.*;
 import net.opanel.common.features.BukkitConfigFeature;

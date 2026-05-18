@@ -1,5 +1,6 @@
 package net.opanel.folia_1_20;
 
+import net.opanel.bukkit_helper.BaseBukkitListener;
 import net.opanel.common.OPanelGameMode;
 import net.opanel.event.*;
 import org.bukkit.GameMode;
@@ -9,7 +10,7 @@ import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-public class FoliaListener implements Listener {
+public class FoliaListener extends BaseBukkitListener implements Listener {
     private final Main plugin;
 
     public FoliaListener(Main plugin) {
