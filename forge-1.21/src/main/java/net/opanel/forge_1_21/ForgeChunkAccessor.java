@@ -30,7 +30,7 @@ public class ForgeChunkAccessor extends BaseForgeChunkAccessor {
         if(chunk == null) return null;
 
         final int minY = -64;
-        final int maxY = world.getMaxY();
+        final int maxY = world.getMaxBuildHeight();
         final int firstSection = minY >> 4;
         final int lastSection = (maxY - 1) >> 4;
 
