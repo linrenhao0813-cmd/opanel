@@ -3,6 +3,7 @@ package net.opanel.bukkit_helper;
 import net.opanel.event.EventManager;
 import net.opanel.event.EventType;
 import net.opanel.event.OPanelChunkDirtyEvent;
+import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -10,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.world.ChunkPopulateEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 
 public abstract class BaseBukkitListener implements Listener {
@@ -81,10 +83,19 @@ public abstract class BaseBukkitListener implements Listener {
         emitDirtyChunk(event.getBlock());
     }
 
+    @EventHandler
+    public void onChunkLoad(ChunkPopulateEvent event) {
+        World world = event.getWorld();
+        if(world.getEnvironment() != World.Environment.NORMAL) return;
+
+        Chunk chunk = event.getChunk();
+        EventManager.get().emit(EventType.CHUNK_DIRTY, new OPanelChunkDirtyEvent(chunk.getX(), chunk.getZ()));
+    }
+
     protected static void emitDirtyChunk(Block block) {
         World world = block.getWorld();
         if(world.getEnvironment() != World.Environment.NORMAL) return;
 
-        EventManager.get().emit(EventType.CHUNK_DIRTY, new OPanelChunkDirtyEvent(world.getName(), block.getX() >> 4, block.getZ() >> 4));
+        EventManager.get().emit(EventType.CHUNK_DIRTY, new OPanelChunkDirtyEvent(block.getX() >> 4, block.getZ() >> 4));
     }
 }

@@ -1,12 +1,18 @@
 package net.opanel.forge_helper.utils;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.dedicated.DedicatedServerProperties;
 import net.minecraft.server.dedicated.DedicatedServerSettings;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.opanel.common.OPanelServer;
+import net.opanel.event.EventManager;
+import net.opanel.event.EventType;
+import net.opanel.event.OPanelChunkDirtyEvent;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -39,5 +45,11 @@ public class ForgeUtils {
         }
         list.add(compound);
         list.addAll(tempList);
+    }
+
+    public static void emitDirtyChunk(ServerLevel world, BlockPos pos) {
+        if(world.dimension() != Level.OVERWORLD) return;
+
+        EventManager.get().emit(EventType.CHUNK_DIRTY, new OPanelChunkDirtyEvent(pos.getX() >> 4, pos.getZ() >> 4));
     }
 }

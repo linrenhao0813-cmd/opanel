@@ -21,8 +21,8 @@ public class SpigotChunkAccessor extends BaseBukkitChunkAccessor {
 
     @Rewrite
     @Override
-    protected Tile readOnMainThread(String saveName, int chunkX, int chunkZ) {
-        World world = plugin.getServer().getWorld(saveName);
+    protected Tile readOnMainThread(int chunkX, int chunkZ) {
+        World world = plugin.getServer().getWorlds().get(0);
         if(world == null) return null;
         // OPanel renders only the overworld; non-NORMAL dimensions are out of scope.
         if(world.getEnvironment() != World.Environment.NORMAL) return null;

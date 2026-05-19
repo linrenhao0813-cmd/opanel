@@ -19,15 +19,18 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
 
 public class ForgeServer extends BaseForgeServer implements OPanelServer, CodeOfConductFeature {
+    private final ForgeChunkAccessor chunkAccessor;
+
     public ForgeServer(MinecraftServer server) {
         super(server);
+
+        chunkAccessor = new ForgeChunkAccessor(server);
     }
 
     @Override
@@ -320,5 +323,10 @@ public class ForgeServer extends BaseForgeServer implements OPanelServer, CodeOf
         }
 
         return mods;
+    }
+
+    @Override
+    public OPanelChunkAccessor getChunkAccessor() {
+        return chunkAccessor;
     }
 }

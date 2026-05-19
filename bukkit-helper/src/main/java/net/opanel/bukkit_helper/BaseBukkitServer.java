@@ -67,6 +67,11 @@ public abstract class BaseBukkitServer implements OPanelServer {
     }
 
     @Override
+    public String getCurrentSaveName() {
+        return server.getWorlds().get(0).getName();
+    }
+
+    @Override
     public void saveAll() {
         runner.runTask(() -> {
             for(World world : server.getWorlds()) {

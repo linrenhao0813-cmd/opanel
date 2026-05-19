@@ -59,6 +59,11 @@ public abstract class BaseForgeServer implements OPanelServer {
     }
 
     @Override
+    public String getCurrentSaveName() {
+        return server.getWorldPath(LevelResource.LEVEL_DATA_FILE).getParent().getFileName().toString();
+    }
+
+    @Override
     public void saveAll() {
         server.saveEverything(true, true, true);
     }

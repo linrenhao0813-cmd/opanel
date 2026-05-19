@@ -6,18 +6,19 @@ import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.storage.PrimaryLevelData;
-import net.opanel.common.OPanelDifficulty;
-import net.opanel.common.OPanelGameMode;
-import net.opanel.common.OPanelSave;
-import net.opanel.common.OPanelServer;
+import net.opanel.common.*;
 import net.opanel.forge_helper.BaseForgeSave;
 import net.opanel.forge_helper.utils.ForgeUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class ForgeSave extends BaseForgeSave implements OPanelSave {
     private CompoundTag nbt;
@@ -176,5 +177,28 @@ public class ForgeSave extends BaseForgeSave implements OPanelSave {
             optionalDisabledListNbt.ifPresent(tags -> tags.add(StringTag.valueOf(id)));
         }
         saveNbt();
+    }
+
+    @Override
+    public List<OPanelWorldRegion> getRegions() {
+        List<OPanelWorldRegion> regions = new ArrayList<>();
+
+        Path regionFolderPath = savePath.resolve("region");
+        if(!regionFolderPath.toFile().exists()) return regions;
+
+        try(Stream<Path> stream = Files.list(regionFolderPath)) {
+            stream.filter(path -> (
+                            path.toString().endsWith(".mca")
+                                    && path.toFile().isFile()
+                    ))
+                    .map(Path::toAbsolutePath)
+                    .forEach(path -> {
+                        ForgeWorldRegion region = new ForgeWorldRegion(savePath.getFileName().toString(), path);
+                        regions.add(region);
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return regions;
     }
 }

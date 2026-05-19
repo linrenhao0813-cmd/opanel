@@ -98,7 +98,7 @@ public class MapRenderManager {
         );
 
         EventManager.get().on(EventType.CHUNK_DIRTY, (OPanelChunkDirtyEvent e) -> {
-            dirtyChunkTracker.markDirty(e.getSaveName(), e.getChunkX(), e.getChunkZ());
+            dirtyChunkTracker.markDirty(e.getChunkX(), e.getChunkZ());
         });
     }
 
@@ -107,23 +107,22 @@ public class MapRenderManager {
         OPanelChunkAccessor accessor = server.getChunkAccessor();
         if(accessor == null) return;
 
-        for(String saveName : dirtyChunkTracker.getSaveNames()) {
-            List<Long> batch = dirtyChunkTracker.drain(saveName, MAX_CHUNKS_PER_FLUSH);
-            if(batch.isEmpty()) continue;
+        List<Long> batch = dirtyChunkTracker.drain(MAX_CHUNKS_PER_FLUSH);
+        if(batch.isEmpty()) return;
 
-            Set<int[]> flushedChunks = new HashSet<>();
-            for(long packed : batch) {
-                final int chunkX = unpackX(packed);
-                final int chunkZ = unpackZ(packed);
-                final Tile tile = accessor.readLiveTile(saveName, chunkX, chunkZ);
-                if(tile == null) continue;
+        final String saveName = server.getCurrentSaveName();
+        Set<int[]> flushedChunks = new HashSet<>();
+        for(long packed : batch) {
+            final int chunkX = unpackX(packed);
+            final int chunkZ = unpackZ(packed);
+            final Tile tile = accessor.readLiveTile(chunkX, chunkZ);
+            if(tile == null) continue;
 
-                renderTile(saveName, chunkX, chunkZ, tile)
+            renderTile(saveName, chunkX, chunkZ, tile)
                     .thenRunAsync(() -> scheduleBundleWrite(saveName), executor);
-                flushedChunks.add(new int[] { chunkX, chunkZ });
-            }
-            EventManager.get().emit(EventType.DIRTY_CHUNKS_FLUSH, new OPanelDirtyChunksFlushEvent(saveName, flushedChunks));
+            flushedChunks.add(new int[] { chunkX, chunkZ });
         }
+        EventManager.get().emit(EventType.DIRTY_CHUNKS_FLUSH, new OPanelDirtyChunksFlushEvent(saveName, flushedChunks));
     }
 
     /**

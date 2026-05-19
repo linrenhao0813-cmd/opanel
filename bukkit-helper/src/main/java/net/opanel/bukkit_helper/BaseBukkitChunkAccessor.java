@@ -17,10 +17,7 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-public class BaseBukkitChunkAccessor implements OPanelChunkAccessor {
-    private static final int SYNC_CALL_TIMEOUT_SECONDS = 5;
-    protected static final String FALLBACK_BIOME = "minecraft:plains";
-
+public abstract class BaseBukkitChunkAccessor implements OPanelChunkAccessor {
     protected final JavaPlugin plugin;
 
     public BaseBukkitChunkAccessor(JavaPlugin plugin) {
@@ -28,19 +25,17 @@ public class BaseBukkitChunkAccessor implements OPanelChunkAccessor {
     }
 
     @Override
-    public Tile readLiveTile(String saveName, int chunkX, int chunkZ) {
+    public Tile readLiveTile(int chunkX, int chunkZ) {
         try {
-            Future<Tile> future = Bukkit.getScheduler().callSyncMethod(plugin, () ->
-                readOnMainThread(saveName, chunkX, chunkZ)
-            );
-            return future.get(SYNC_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            Future<Tile> future = Bukkit.getScheduler().callSyncMethod(plugin, () -> readOnMainThread(chunkX, chunkZ));
+            return future.get(SYNC_CALL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             return null;
         }
     }
 
-    protected Tile readOnMainThread(String saveName, int chunkX, int chunkZ) {
-        World world = plugin.getServer().getWorld(saveName);
+    protected Tile readOnMainThread(int chunkX, int chunkZ) {
+        World world = plugin.getServer().getWorlds().get(0);
         if(world == null) return null;
         // OPanel renders only the overworld; non-NORMAL dimensions are out of scope.
         if(world.getEnvironment() != World.Environment.NORMAL) return null;
