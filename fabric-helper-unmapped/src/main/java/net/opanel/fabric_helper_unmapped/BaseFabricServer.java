@@ -66,6 +66,11 @@ public abstract class BaseFabricServer implements OPanelServer {
     }
 
     @Override
+    public String getCurrentSaveName() {
+        return server.getWorldPath(LevelResource.LEVEL_DATA_FILE).getParent().getFileName().toString();
+    }
+
+    @Override
     public void saveAll() {
         runTask(() -> server.saveEverything(true, true, true));
     }

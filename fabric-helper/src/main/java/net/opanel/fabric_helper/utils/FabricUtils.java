@@ -4,7 +4,12 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.server.dedicated.*;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import net.opanel.common.OPanelServer;
+import net.opanel.event.EventManager;
+import net.opanel.event.EventType;
+import net.opanel.event.OPanelChunkDirtyEvent;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -37,5 +42,11 @@ public class FabricUtils {
         }
         list.add(compound);
         list.addAll(tempList);
+    }
+
+    public static void emitDirtyChunk(World world, BlockPos pos) {
+        if(world.getRegistryKey() != World.OVERWORLD) return;
+
+        EventManager.get().emit(EventType.CHUNK_DIRTY, new OPanelChunkDirtyEvent(pos.getX() >> 4, pos.getZ() >> 4));
     }
 }

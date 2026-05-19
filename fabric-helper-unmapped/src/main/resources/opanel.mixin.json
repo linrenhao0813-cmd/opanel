@@ -3,7 +3,8 @@
   "package": "net.opanel.fabric_helper_unmapped.mixin",
   "compatibilityLevel": "JAVA_25",
   "server": [
-    "ServerPlayerGameModeMixin"
+    "ServerPlayerGameModeMixin",
+    "LevelChunkMixin"
   ],
   "injectors": {
     "defaultRequire": 1

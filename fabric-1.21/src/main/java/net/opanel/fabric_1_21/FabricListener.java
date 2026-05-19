@@ -1,6 +1,9 @@
 package net.opanel.fabric_1_21;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.World;
 import net.opanel.common.OPanelGameMode;
 import net.opanel.event.*;
 import net.opanel.fabric_helper.event.PlayerGameModeChangeEvent;
@@ -26,5 +29,12 @@ public class FabricListener {
             }
             EventManager.get().emit(EventType.PLAYER_GAMEMODE_CHANGE, new OPanelPlayerGameModeChangeEvent(new FabricPlayer(player), opanelGamemode));
         }));
+
+        ServerChunkEvents.CHUNK_LOAD.register((world, chunk) -> {
+            if(world.getRegistryKey() != World.OVERWORLD) return;
+
+            ChunkPos pos = chunk.getPos();
+            EventManager.get().emit(EventType.CHUNK_DIRTY, new OPanelChunkDirtyEvent(pos.x, pos.z));
+        });
     }
 }
