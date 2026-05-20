@@ -39,13 +39,13 @@ public class AnvilUtility {
         return packed;
     }
 
-    public static int paletteSizeToBitsSize(int paletteSize, int minSize) {
-        return paletteSize <= 1 ? minSize : Math.max(minSize, paletteSizeToBitsSize(paletteSize));
+    public static int paletteSizeToBitsSize(int paletteSize) {
+        return paletteSizeToBitsSize(paletteSize, 1);
     }
 
-    public static int paletteSizeToBitsSize(int paletteSize) {
-        // equals to Math.ceil(Math.log(paletteSize) / Math.log(2))
-        return Integer.SIZE - Integer.numberOfLeadingZeros(paletteSize - 1);
+    public static int paletteSizeToBitsSize(int paletteSize, int minSize) {
+        // equals to Math.max(minSize, Math.ceil(Math.log(paletteSize) / Math.log(2))
+        return paletteSize <= 1 ? minSize : Math.max(minSize, Integer.SIZE - Integer.numberOfLeadingZeros(paletteSize - 1));
     }
 
     public static int[] getGlobalChunkPosition(String mcaFileName, int chunkX, int chunkZ) throws NumberFormatException {

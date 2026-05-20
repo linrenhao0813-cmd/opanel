@@ -55,15 +55,13 @@ pub fn bitunpack(packed: &[u64], bits: u32) -> Vec<u16> {
 }
 
 /// Mirror of `AnvilUtility.paletteSizeToBitsSize` on the Java side: minimum 4 bits.
-pub fn palette_size_to_bits_size(palette_size: usize, min_size: Option<u32>) -> u32 {
-    if min_size.is_some() {
-        if palette_size <= 1 {
-            min_size.unwrap()
-        } else {
-            let bits = u32::BITS - ((palette_size - 1) as u32).leading_zeros();
-            bits.max(min_size.unwrap())
-        }
+pub fn palette_size_to_bits_size(palette_size: usize, min_size_option: Option<u32>) -> u32 {
+    let min_size = min_size_option.unwrap_or(1);
+
+    if palette_size <= 1 {
+        min_size
     } else {
-        u32::BITS - ((palette_size - 1) as u32).leading_zeros()
+        let bits = u32::BITS - ((palette_size - 1) as u32).leading_zeros();
+        bits.max(min_size)
     }
 }
