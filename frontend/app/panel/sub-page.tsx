@@ -18,6 +18,7 @@ export function SubPage({
   description,
   category,
   icon,
+  showHeader = true,
   outerClassName,
   pageClassName,
   className,
@@ -29,6 +30,7 @@ export function SubPage({
   description?: string
   category?: string
   icon?: React.ReactNode
+  showHeader?: boolean
   outerClassName?: string
   pageClassName?: string
   className?: string
@@ -40,32 +42,40 @@ export function SubPage({
   return (
     <div className={cn("group max-h-screen bg-sidebar flex-1 flex flex-col", outerClassName)}>
       <Navbar className="px-8 max-sm:px-2"/>
-      <div className={cn("flex-1 p-8 flex flex-col gap-4 overflow-y-auto", !description && "gap-8", pageClassName)}>
-        <div className="space-y-4">
-          {category && (
-            <Breadcrumb className="mb-3">
-              <BreadcrumbList>
-                <BreadcrumbItem>{category}</BreadcrumbItem>
-                {subTitle && (
-                  <>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>{title}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </>
+      <div className={cn("flex-1 p-8 flex flex-col gap-4 overflow-y-auto", !description && "gap-8", showHeader ? pageClassName : className)}>
+        {
+          showHeader
+          ? (
+            <>
+              <div className="space-y-4">
+                {category && (
+                  <Breadcrumb className="mb-3">
+                    <BreadcrumbList>
+                      <BreadcrumbItem>{category}</BreadcrumbItem>
+                      {subTitle && (
+                        <>
+                          <BreadcrumbSeparator />
+                          <BreadcrumbItem>
+                            <BreadcrumbPage>{title}</BreadcrumbPage>
+                          </BreadcrumbItem>
+                        </>
+                      )}
+                    </BreadcrumbList>
+                  </Breadcrumb>
                 )}
-              </BreadcrumbList>
-            </Breadcrumb>
-          )}
-          <div className="flex items-center gap-5">
-            {icon}
-            <h1 className="text-3xl font-bold">{subTitle ?? title}</h1>
-          </div>
-          {description && <span className="text-muted-foreground">{description}</span>}
-        </div>
-        <div className={className} {...props}>
-          {children}
-        </div>
+                <div className="flex items-center gap-5">
+                  {icon}
+                  <h1 className="text-3xl font-bold">{subTitle ?? title}</h1>
+                </div>
+                {description && <span className="text-muted-foreground">{description}</span>}
+              </div>
+              <div className={className} {...props}>
+                {children}
+              </div>
+            </>
+          )
+          : children
+        }
       </div>
     </div>
   );

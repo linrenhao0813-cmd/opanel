@@ -6,18 +6,19 @@ import net.minecraft.server.dedicated.MinecraftDedicatedServer;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.LevelInfo;
 import net.minecraft.world.level.LevelProperties;
-import net.opanel.common.OPanelDifficulty;
-import net.opanel.common.OPanelGameMode;
-import net.opanel.common.OPanelSave;
-import net.opanel.common.OPanelServer;
+import net.opanel.common.*;
 import net.opanel.fabric_helper.BaseFabricSave;
 import net.opanel.fabric_helper.utils.FabricUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class FabricSave extends BaseFabricSave implements OPanelSave {
     private NbtCompound nbt;
@@ -175,5 +176,28 @@ public class FabricSave extends BaseFabricSave implements OPanelSave {
             optionalDisabledListNbt.ifPresent(tags -> tags.add(NbtString.of(id)));
         }
         saveNbt();
+    }
+
+    @Override
+    public List<OPanelWorldRegion> getRegions() {
+        List<OPanelWorldRegion> regions = new ArrayList<>();
+
+        Path regionFolderPath = savePath.resolve("region");
+        if(!regionFolderPath.toFile().exists()) return regions;
+
+        try(Stream<Path> stream = Files.list(regionFolderPath)) {
+            stream.filter(path -> (
+                            path.toString().endsWith(".mca")
+                                    && path.toFile().isFile()
+                    ))
+                    .map(Path::toAbsolutePath)
+                    .forEach(path -> {
+                        FabricWorldRegion region = new FabricWorldRegion(savePath.getFileName().toString(), path);
+                        regions.add(region);
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return regions;
     }
 }

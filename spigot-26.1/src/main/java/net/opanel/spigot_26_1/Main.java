@@ -108,6 +108,7 @@ public class Main extends JavaPlugin implements Listener, TaskRunner {
         try {
             instance.setServer(new SpigotServer(this, getServer()));
             instance.getWebServer().start(); // default port 3000
+            instance.getMapRenderManager().init();
         } catch (Exception e) {
             log.error("Failed to start OPanel web server: " + e.getMessage());
             Bukkit.getPluginManager().disablePlugin(this);

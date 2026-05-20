@@ -10,19 +10,16 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.level.storage.PrimaryLevelData;
-import net.opanel.common.OPanelDifficulty;
-import net.opanel.common.OPanelGameMode;
-import net.opanel.common.OPanelSave;
-import net.opanel.common.OPanelServer;
+import net.opanel.common.*;
 import net.opanel.utils.Utils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
+import java.util.stream.Stream;
 
 public class NeoSave implements OPanelSave {
     private final MinecraftServer server;
@@ -216,5 +213,28 @@ public class NeoSave implements OPanelSave {
     @Override
     public void delete() throws IOException {
         Utils.deleteDirectoryRecursively(savePath);
+    }
+
+    @Override
+    public List<OPanelWorldRegion> getRegions() {
+        List<OPanelWorldRegion> regions = new ArrayList<>();
+
+        Path regionFolderPath = savePath.resolve("region");
+        if(!regionFolderPath.toFile().exists()) return regions;
+
+        try(Stream<Path> stream = Files.list(regionFolderPath)) {
+            stream.filter(path -> (
+                            path.toString().endsWith(".mca")
+                                    && path.toFile().isFile()
+                    ))
+                    .map(Path::toAbsolutePath)
+                    .forEach(path -> {
+                        NeoWorldRegion region = new NeoWorldRegion(savePath.getFileName().toString(), path);
+                        regions.add(region);
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return regions;
     }
 }

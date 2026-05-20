@@ -71,6 +71,7 @@
   "sidebar.server": "服务器",
   "sidebar.server.dashboard": "仪表盘",
   "sidebar.server.terminal": "后台",
+  "sidebar.server.map": "地图",
   "sidebar.management": "管理",
   "sidebar.management.saves": "存档",
   "sidebar.management.players": "玩家",
@@ -398,6 +399,13 @@
   "terminal.shortcut.form.command.label": "命令",
   "terminal.shortcut.form.command.placeholder": "请输入要执行的命令...",
   "terminal.shortcut.form.command.empty": "命令不可为空",
+
+  "map.title": "地图",
+  "map.settings.title": "地图设置",
+  "map.settings.description": "在此调整地图显示设置选项。",
+  "map.settings.biome-coloring": "生物群系着色",
+  "map.settings.render-shadows": "渲染阴影",
+  "map.settings.debug-mode": "调试模式",
 
   "logs.title": "日志",
   "logs.description": "管理和查看服务器的所有日志文件",

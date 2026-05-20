@@ -13,7 +13,10 @@
     "lint": "next lint",
     "bundle": "node scripts/bundle",
     "prelaunch": "node scripts/prelaunch",
-    "force-prelaunch": "node scripts/prelaunch force"
+    "prelaunch:force": "node scripts/prelaunch -f",
+    "wasm:test": "cd wasm-lib && cargo test -p wasm-lib",
+    "wasm:build": "node scripts/build-wasm --run",
+    "wasm:build:force": "node scripts/build-wasm -f --run"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
@@ -87,6 +90,7 @@
     "tw-animate-css": "^1.3.4",
     "typescript": "^5",
     "vitest": "^4.1.2",
+    "wasm-pack": "^0.15.0",
     "yauzl": "^3.3.0"
   }
 }

@@ -32,6 +32,7 @@ OPanel
 │         │     ├─ logger/                  # 日志能力抽象
 │         │     ├─ storage/                 # 存储抽象与存储键/文件定义
 │         │     ├─ task/                    # 定时任务与调度管理
+│         │     ├─ map/                     # 网页地图预渲染
 │         │     ├─ terminal/                # 控制台日志监听与终端能力
 │         │     ├─ time/                    # 运行时间/TPS 等时间状态模型
 │         │     ├─ utils/                   # 通用工具类
@@ -51,6 +52,7 @@ OPanel
 │  │  ├─ nbt/                              # NBT 数据解析与处理
 │  │  ├─ server-config/                    # Minecraft server.properties相关内容
 │  │  ├─ ws/                               # WebSocket 协议与连接封装
+│  │  ├─ map/                              # 网页地图渲染 Worker
 │  │  ├─ api.ts                            # 后端 API 调用封装
 │  │  ├─ emitter.ts                        # 全局单例的 EventEmitter（有且仅有一个`refresh-data`事件，用于简便地触发数据刷新，重新从服务端获取数据）
 │  │  ├─ fonts.ts                          # 加载字体文件
@@ -61,6 +63,7 @@ OPanel
 │  │  ├─ time.ts                           # 时间相关工具
 │  │  ├─ types.ts                          # 类型定义
 │  │  └─ utils.ts                          # 工具函数集合
+│  ├─ wasm-lib/                            # Rust Wasm库（方块纹理数据解析、地图颜色对照表生成、网页地图着色）
 │  ├─ public/                              # 公共静态资源目录
 │  ├─ scripts/                             # 构建/预处理脚本
 │  └─ style/                               # 全局样式与主题样式
@@ -127,23 +130,6 @@ i18n 键名使用 **kebab-case**，遵循以下格式：
 - Java的依赖若需要进行Shadow Jar的Relocate，必须Relocate到`net.opanel.deps.*`包下
 - 编写对话框dialog时，必须单独新建xxx-dialog.tsx文件
 - 使用DataTable组件，编写columns定义时，必须单独新建columns.tsx文件
-
-## 启动 & 调试
-
-### 前端
-
-调试前端先需要事先启动一个装有OPanel（面板端口必须为`3000`）的Minecraft服务端实例。
-
-```
-cd frontend
-npm run dev
-```
-
-**重要：禁止执行`npm run build`构建前端，这将会把前端构建产物复制到`/core/src/main/resources/web/`文件夹下，该文件夹将被提交到git中，容易造成代码冲突！**
-
-### 后端
-
-修改完代码后直接执行Gradle构建，将构建好的jar包放入对应版本的Minecraft服务端中，然后启动服务端。
 
 ## 前端单元测试
 

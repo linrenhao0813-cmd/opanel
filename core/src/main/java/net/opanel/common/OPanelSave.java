@@ -25,4 +25,5 @@ public interface OPanelSave {
     HashMap<String, Boolean> getDatapacks();
     void toggleDatapack(String id, boolean enabled) throws IOException;
     void delete() throws IOException;
+    List<OPanelWorldRegion> getRegions();
 }

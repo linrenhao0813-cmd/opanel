@@ -87,6 +87,12 @@ public abstract class BaseController {
         }
     }
 
+    protected boolean handleEtag(Context ctx, String etag) {
+        ctx.header("ETag", etag);
+        String ifNoneMatch = ctx.header("If-None-Match");
+        return ifNoneMatch != null && ifNoneMatch.equals(etag);
+    }
+
     @SuppressWarnings("unchecked")
     protected <C extends BaseController> C getControllerInstance(Class<C> controllerClass) {
         return (C) instances.get(controllerClass);

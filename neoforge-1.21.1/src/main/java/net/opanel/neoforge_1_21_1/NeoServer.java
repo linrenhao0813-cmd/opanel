@@ -16,12 +16,7 @@ import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
-import net.opanel.common.ServerType;
-import net.opanel.common.OPanelPlayer;
-import net.opanel.common.OPanelPlugin;
-import net.opanel.common.OPanelSave;
-import net.opanel.common.OPanelServer;
-import net.opanel.common.OPanelWhitelist;
+import net.opanel.common.*;
 import net.opanel.exception.ActLaterException;
 import net.opanel.utils.Utils;
 
@@ -39,10 +34,12 @@ import java.util.stream.Stream;
 public class NeoServer implements OPanelServer {
     private final MinecraftServer server;
     private final DedicatedServer dedicatedServer;
+    private final NeoChunkAccessor chunkAccessor;
 
     public NeoServer(MinecraftServer server) {
         this.server = server;
         dedicatedServer = (DedicatedServer) server;
+        chunkAccessor = new NeoChunkAccessor(server);
     }
 
     @Override
@@ -114,6 +111,11 @@ public class NeoServer implements OPanelServer {
     @Override
     public int getPort() {
         return server.getPort();
+    }
+
+    @Override
+    public String getCurrentSaveName() {
+        return server.getWorldPath(LevelResource.LEVEL_DATA_FILE).getParent().getFileName().toString();
     }
 
     @Override
@@ -504,6 +506,11 @@ public class NeoServer implements OPanelServer {
             FileOpsHelperApi.scheduleDelete(List.of(filePath.toString()));
             throw new ActLaterException();
         }
+    }
+
+    @Override
+    public OPanelChunkAccessor getChunkAccessor() {
+        return chunkAccessor;
     }
 }
 

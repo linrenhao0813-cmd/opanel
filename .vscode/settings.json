@@ -1,3 +1,4 @@
 {
-  "postcss.validate": false
+  "postcss.validate": false,
+  "rust-analyzer.linkedProjects": ["frontend/wasm-lib/Cargo.toml"]
 }

@@ -71,6 +71,7 @@
   "sidebar.server": "Server",
   "sidebar.server.dashboard": "Dashboard",
   "sidebar.server.terminal": "Terminal",
+  "sidebar.server.map": "Map",
   "sidebar.management": "Management",
   "sidebar.management.saves": "Saves",
   "sidebar.management.players": "Players",
@@ -398,6 +399,13 @@
   "terminal.shortcut.form.command.label": "Command",
   "terminal.shortcut.form.command.placeholder": "Please enter the command to execute...",
   "terminal.shortcut.form.command.empty": "Command cannot be empty",
+
+  "map.title": "Map",
+  "map.settings.title": "Map Settings",
+  "map.settings.description": "Adjust map display settings here.",
+  "map.settings.biome-coloring": "Biome Coloring",
+  "map.settings.render-shadows": "Render Shadows",
+  "map.settings.debug-mode": "Debug Mode",
 
   "logs.title": "Logs",
   "logs.description": "Manage and view all log files of the server",

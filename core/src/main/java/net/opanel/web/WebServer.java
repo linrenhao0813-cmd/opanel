@@ -17,6 +17,7 @@ import net.opanel.controller.openapi.OpenMonitorController;
 import net.opanel.controller.openapi.OpenPlayersController;
 import net.opanel.controller.openapi.OpenPluginsController;
 import net.opanel.endpoint.InventoryEndpoint;
+import net.opanel.endpoint.MapEndpoint;
 import net.opanel.endpoint.PlayersEndpoint;
 import net.opanel.endpoint.TerminalEndpoint;
 
@@ -41,6 +42,9 @@ public class WebServer {
     public void start() throws Exception {
         app = Javalin.create(config -> {
             config.showJavalinBanner = false;
+
+            // HTTP response compression
+            config.compression.gzipOnly(6);
 
             // Gson configuration
             config.jsonMapper(new JavalinGson(new Gson()));
@@ -83,6 +87,7 @@ public class WebServer {
         app.ws("/socket/players", ws -> new PlayersEndpoint(app, ws, plugin));
         app.ws("/socket/inventory/{uuid}", ws -> new InventoryEndpoint(app, ws, plugin));
         app.ws("/socket/terminal", ws -> new TerminalEndpoint(app, ws, plugin));
+        app.ws("/socket/map", ws -> new MapEndpoint(app, ws, plugin));
 
         // API Controllers
         BeforeController beforeController = new BeforeController(plugin);
@@ -96,6 +101,7 @@ public class WebServer {
         IconController iconController = new IconController(plugin);
         InfoController infoController = new InfoController(plugin);
         LogsController logsController = new LogsController(plugin);
+        MapController mapController = new MapController(plugin);
         MonitorController monitorController = new MonitorController(plugin);
         PlayersController playersController = new PlayersController(plugin);
         SavesController savesController = new SavesController(plugin);
@@ -172,6 +178,11 @@ public class WebServer {
                 get("{fileName}/download", logsController.downloadLog);
                 delete("/", logsController.clearLogs);
                 delete("{fileName}", logsController.deleteLog);
+            });
+            path("map", () -> {
+                get("{saveName}", mapController.getAvailableTiles);
+                post("{saveName}/tiles-range", mapController.getTilesInRange);
+                post("{saveName}/tiles", mapController.getTiles);
             });
             get("monitor", monitorController.getMonitor);
             path("players", () -> {

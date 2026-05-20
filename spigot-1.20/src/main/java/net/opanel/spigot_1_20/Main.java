@@ -102,6 +102,7 @@ public class Main extends JavaPlugin implements Listener, TaskRunner {
 
         try {
             instance.getWebServer().start(); // default port 3000
+            instance.getMapRenderManager().init();
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -10,10 +10,7 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.WorldSavePath;
 import net.minecraft.world.GameRules;
-import net.opanel.common.OPanelPlayer;
-import net.opanel.common.OPanelServer;
-import net.opanel.common.OPanelSave;
-import net.opanel.common.OPanelWhitelist;
+import net.opanel.common.*;
 import net.opanel.fabric_helper.BaseFabricServer;
 import net.opanel.utils.Utils;
 
@@ -26,8 +23,12 @@ import java.util.*;
 import java.util.stream.Stream;
 
 public class FabricServer extends BaseFabricServer implements OPanelServer {
+    private final FabricChunkAccessor chunkAccessor;
+
     public FabricServer(MinecraftServer server) {
         super(server);
+
+        chunkAccessor = new FabricChunkAccessor(server);
     }
 
     @Override
@@ -226,5 +227,10 @@ public class FabricServer extends BaseFabricServer implements OPanelServer {
                 }
             }
         });
+    }
+
+    @Override
+    public OPanelChunkAccessor getChunkAccessor() {
+        return chunkAccessor;
     }
 }

@@ -4,10 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.tree.CommandNode;
 import net.opanel.bukkit_helper.BaseBukkitServer;
 import net.opanel.bukkit_helper.utils.BukkitUtils;
-import net.opanel.common.OPanelPlayer;
-import net.opanel.common.OPanelSave;
-import net.opanel.common.OPanelServer;
-import net.opanel.common.OPanelWhitelist;
+import net.opanel.common.*;
 import net.opanel.common.features.BukkitConfigFeature;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -22,8 +19,12 @@ import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
 public class SpigotServer extends BaseBukkitServer implements OPanelServer, BukkitConfigFeature {
+    private final SpigotChunkAccessor chunkAccessor;
+
     public SpigotServer(Main plugin, Server server) {
         super(plugin, server);
+
+        this.chunkAccessor = new SpigotChunkAccessor(plugin);
     }
 
     @Override
@@ -212,5 +213,10 @@ public class SpigotServer extends BaseBukkitServer implements OPanelServer, Bukk
                 }
             });
         });
+    }
+
+    @Override
+    public OPanelChunkAccessor getChunkAccessor() {
+        return chunkAccessor;
     }
 }

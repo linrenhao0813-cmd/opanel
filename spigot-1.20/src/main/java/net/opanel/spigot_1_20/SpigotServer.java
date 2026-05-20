@@ -23,8 +23,12 @@ import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
 public class SpigotServer extends BaseBukkitServer implements OPanelServer, BukkitConfigFeature {
+    private final SpigotChunkAccessor chunkAccessor;
+
     public SpigotServer(Main plugin, Server server) {
         super(plugin, server);
+
+        this.chunkAccessor = new SpigotChunkAccessor(plugin);
     }
 
     @Override
@@ -262,5 +266,10 @@ public class SpigotServer extends BaseBukkitServer implements OPanelServer, Bukk
             FileOpsHelperApi.scheduleDelete(List.of(filePath.toString()));
             throw new ActLaterException();
         }
+    }
+
+    @Override
+    public OPanelChunkAccessor getChunkAccessor() {
+        return chunkAccessor;
     }
 }
