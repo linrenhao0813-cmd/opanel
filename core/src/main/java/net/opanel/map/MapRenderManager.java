@@ -193,7 +193,7 @@ public class MapRenderManager {
         Map<Long, byte[]> snapshot = new HashMap<>(bytesMap);
         try {
             byte[] payload = TileCompressor.bundleTiles(snapshot).toByteArray();
-            Path tmp = OPanel.TMP_DIR_PATH.resolve(saveName + OTILES_TMP_SUFFIX);
+            Path tmp = OPanel.MAP_DATA_PATH.resolve(saveName + OTILES_TMP_SUFFIX);
             Path dst = OPanel.MAP_DATA_PATH.resolve(saveName + OTILES_SUFFIX);
             Files.write(tmp, payload);
             Files.move(tmp, dst, StandardCopyOption.REPLACE_EXISTING);
@@ -203,7 +203,7 @@ public class MapRenderManager {
     }
 
     public CompletableFuture<?> renderSave(String saveName, List<OPanelWorldRegion> regions) {
-        if(regions.isEmpty()) return new CompletableFuture<>();
+        if(regions.isEmpty()) return CompletableFuture.completedFuture(null);
 
         CompletableFuture<?>[] arr = regions.stream()
             .map(region -> CompletableFuture.runAsync(new TilesRenderTask(plugin, saveName, region), executor))

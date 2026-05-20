@@ -89,6 +89,10 @@ class TileWorker {
 
   private handleSetSettings({ settings }: SetSettingsMessage) {
     this.settings = settings;
+
+    for(const bitmap of this.tileCache.values()) {
+      bitmap.close();
+    }
     this.tileCache.clear();
     this.macroCanvases.clear();
     self.postMessage({ type: "tilesLoaded", value: this.tileCache.size } satisfies WorkerToMain);
@@ -179,9 +183,6 @@ class TileWorker {
   }
 
   private async forceLoadTiles(tileCoords: [number, number][]) {
-    // const key = getTileKey(this.saveName, chunkX, chunkZ);
-    // if(this.inflight.has(key)) return;
-    // this.inflight.add(key);
     const pendingKeys: string[] = [];
     const coords: [number, number][] = [];
     for(const [x, z] of tileCoords) {
