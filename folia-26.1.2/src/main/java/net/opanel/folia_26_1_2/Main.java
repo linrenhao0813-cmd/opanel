@@ -1,4 +1,4 @@
-package net.opanel.folia_1_20;
+package net.opanel.folia_26_1_2;
 
 import com.cozooo.dlc_fileops_helper.FileOpsHelperBootstrap;
 import de.tr7zw.changeme.nbtapi.NBT;
@@ -8,7 +8,7 @@ import net.opanel.bukkit_helper.TaskRunner;
 import net.opanel.bukkit_helper.command.OPanelCommand;
 import net.opanel.bukkit_helper.config.ConfigManagerImpl;
 import net.opanel.common.Constants;
-import net.opanel.folia_1_20.terminal.LogListenerManagerImpl;
+import net.opanel.folia_26_1_2.terminal.LogListenerManagerImpl;
 import org.apache.logging.log4j.LogManager;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
@@ -31,11 +31,13 @@ public class Main extends JavaPlugin implements Listener, TaskRunner {
 
     @Override
     public void onEnable() {
-        if(!NBT.preloadApi()) {
-            LOGGER.warning("Cannot start OPanel plugin: NBT-API is not initialized properly.");
-            Bukkit.getPluginManager().disablePlugin(this);
-            return;
-        }
+        // see https://github.com/tr7zw/Item-NBT-API/issues/349
+//        if(!NBT.preloadApi()) {
+//            LOGGER.warning("Cannot start OPanel plugin: NBT-API is not initialized properly.");
+//            Bukkit.getPluginManager().disablePlugin(this);
+//            return;
+//        }
+        NBT.preloadApi();
         FileOpsHelperBootstrap.initialize(Paths.get(""), OPanel.TMP_DIR_PATH);
 
         final LoggerImpl logger = new LoggerImpl(LOGGER);
