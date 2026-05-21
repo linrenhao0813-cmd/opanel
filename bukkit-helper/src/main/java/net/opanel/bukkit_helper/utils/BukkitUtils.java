@@ -3,6 +3,7 @@ package net.opanel.bukkit_helper.utils;
 import com.mojang.brigadier.CommandDispatcher;
 import de.tr7zw.changeme.nbtapi.iface.ReadWriteNBT;
 import de.tr7zw.changeme.nbtapi.iface.ReadWriteNBTCompoundList;
+import net.opanel.utils.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 
@@ -46,5 +47,17 @@ public class BukkitUtils {
         for(ReadWriteNBT item : tempList) {
             list.addCompound(item);
         }
+    }
+
+    public static boolean isLeaves() {
+        return Utils.hasClass("org.leavesmc.leaves.LeavesConfig");
+    }
+
+    public static boolean isPaper() {
+        return Utils.hasClass("com.destroystokyo.paper.PaperConfig");
+    }
+
+    public static boolean isSpigot() {
+        return Utils.hasClass("org.bukkit.entity.Player$Spigot");
     }
 }

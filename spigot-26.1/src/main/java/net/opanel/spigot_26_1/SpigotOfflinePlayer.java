@@ -2,6 +2,7 @@ package net.opanel.spigot_26_1;
 
 import net.opanel.annotation.Rewrite;
 import net.opanel.bukkit_helper.BaseBukkitOfflinePlayer;
+import net.opanel.bukkit_helper.utils.BukkitUtils;
 import net.opanel.common.OPanelPlayer;
 import org.bukkit.*;
 import org.bukkit.profile.PlayerProfile;
@@ -23,7 +24,11 @@ public class SpigotOfflinePlayer extends BaseBukkitOfflinePlayer implements OPan
     @Override
     protected Path getPlayerDataPath() {
         String uuid = player.getUniqueId().toString();
-        Path path = server.getWorlds().getFirst().getWorldFolder().toPath().resolve("../../../players/data/"+ uuid +".dat");
+        Path path = (
+            BukkitUtils.isPaper()
+            ? server.getWorlds().getFirst().getWorldFolder().toPath().resolve("../../../players/data/"+ uuid +".dat")
+            : server.getWorlds().getFirst().getWorldFolder().toPath().resolve("players/data/"+ uuid +".dat")
+        );
         if(!Files.exists(path)) {
             throw new NullPointerException("Player data file for UUID "+ uuid +" unavailable.");
         }
