@@ -11,8 +11,8 @@ configurations {
 repositories {
     mavenCentral()
     maven {
-        name = "spigotmc"
-        url = uri("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
+        name = "papermc"
+        url = uri("https://repo.papermc.io/repository/maven-public/")
     }
     maven {
         name = "CodeMC"
@@ -25,11 +25,11 @@ repositories {
 }
 
 base {
-    archivesName = "${rootProject.name}-spigot"
+    archivesName = "${rootProject.name}-folia"
 }
 
 dependencies {
-    compileOnly "org.spigotmc:spigot-api:${minecraft_version}-R0.1-SNAPSHOT"
+    compileOnly "io.papermc.paper:paper-api:${paper_version}"
     shadowImplementation "de.tr7zw:item-nbt-api:2.15.5"
     compileOnly "org.apache.logging.log4j:log4j-core:2.24.1"
     compileOnly "com.mojang:brigadier:1.0.18"
@@ -72,7 +72,7 @@ tasks.named('compileJava', JavaCompile) {
 tasks.named('processResources', ProcessResources) {
     var replaceProperties = [
             version: project.version,
-            api_version: api_version
+            minecraft_version: minecraft_version
     ]
     inputs.properties replaceProperties
 
