@@ -5,6 +5,7 @@ import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 
 import { cn } from "@/lib/utils"
+import { googleSansCode } from "@/lib/fonts"
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const
@@ -107,6 +108,7 @@ function ChartTooltipContent({
   labelFormatter,
   labelClassName,
   formatter,
+  valueFormatter,
   color,
   nameKey,
   labelKey,
@@ -119,6 +121,7 @@ function ChartTooltipContent({
     indicator?: "line" | "dot" | "dashed"
     nameKey?: string
     labelKey?: string
+    valueFormatter?: (value: string) => string
   } & Omit<
     RechartsPrimitive.DefaultTooltipContentProps<ValueType, NameType>,
     "accessibilityLayer"
@@ -218,10 +221,18 @@ function ChartTooltipContent({
                       </span>
                     </div>
                     {item.value != null && (
-                      <span className="font-mono font-medium text-foreground tabular-nums">
-                        {typeof item.value === "number"
+                      <span className={cn("font-medium text-foreground tabular-nums", googleSansCode.className)}>
+                        {
+                          valueFormatter
+                          ? valueFormatter(
+                            typeof item.value === "number"
+                            ? item.value.toLocaleString()
+                            : String(item.value)
+                          )
+                          : typeof item.value === "number"
                           ? item.value.toLocaleString()
-                          : String(item.value)}
+                          : String(item.value)
+                        }
                       </span>
                     )}
                   </div>

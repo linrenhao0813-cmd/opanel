@@ -54,7 +54,7 @@ export function MonitorCard({
           <YAxis hide domain={[0, 100]}/>
           <ChartTooltip
             cursor={false}
-            content={<ChartTooltipContent hideLabel indicator="line"/>}/>
+            content={<ChartTooltipContent hideLabel indicator="line" valueFormatter={(value) => `${value}%`}/>}/>
           <defs>
             <linearGradient id="fillMemory" x1="0" y1="0" x2="0" y2="1">
               <stop

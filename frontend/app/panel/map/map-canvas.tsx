@@ -132,7 +132,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function MapCanvas
   // whole component via `key={save}` in the parent, which gives us a fresh
   // canvas and a fresh worker. Settings changes go through a postMessage.
   const initWorker = useCallback(async () => {
-    if(workerRef.current || !canvasRef.current) return;
+    // Skip until we have a save: the page mounts with an empty `save` and only
+    // fills it in after fetching the world list. Initializing here would spin
+    // up a throwaway worker and consume the canvas's one-shot transfer.
+    if(workerRef.current || !canvasRef.current || !save) return;
 
     const wasmUrl = new URL("../../../wasm-lib/pkg/wasm_lib_bg.wasm", import.meta.url);
     const wasmResp = await fetch(wasmUrl);
