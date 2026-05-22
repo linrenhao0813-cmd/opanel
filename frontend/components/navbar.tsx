@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { BookText, Info, LogOut, Settings, SquareArrowOutUpRight } from "lucide-react";
+import { BookText, HandCoins, Info, LogOut, Settings, SquareArrowOutUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./theme-toggle";
@@ -34,7 +34,7 @@ export function Navbar({ className, ...props }: React.ComponentProps<"nav">) {
           {`v${version}`}
         </Badge>
       </UpdateDialog>
-      <div className="space-x-2 mr-2 max-sm:mr-0 max-sm:space-x-0">
+      <div className="mr-2 max-sm:mr-0 max-sm:space-x-0">
         <Button
           variant="ghost"
           asChild>
@@ -52,6 +52,18 @@ export function Navbar({ className, ...props }: React.ComponentProps<"nav">) {
             rel="noopener noreferrer">
             <BookText />
             <span className="max-sm:hidden">{$("nav.docs")}</span>
+            <SquareArrowOutUpRight className="!size-3 ml-1 max-sm:hidden" stroke="var(--color-muted-foreground)"/>
+          </Link>
+        </Button>
+        <Button
+          variant="ghost"
+          asChild>
+          <Link
+            href="https://nocp.space/donate"
+            target="_blank"
+            rel="noopener noreferrer">
+            <HandCoins />
+            <span className="max-sm:hidden">{$("nav.donate")}</span>
             <SquareArrowOutUpRight className="!size-3 ml-1 max-sm:hidden" stroke="var(--color-muted-foreground)"/>
           </Link>
         </Button>
