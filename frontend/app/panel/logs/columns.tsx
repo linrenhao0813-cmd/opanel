@@ -23,7 +23,7 @@ export const columns: ColumnDef<Log>[] = [
         <Button
           variant="link"
           size="sm"
-          className="h-4 font-semibold"
+          className="h-4 font-semibold text-foreground"
           asChild>
           <Link href={`/panel/logs/view?log=${name}`}>{name}</Link>
         </Button>
