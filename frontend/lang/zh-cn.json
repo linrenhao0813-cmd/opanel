@@ -387,6 +387,7 @@
   "terminal.ws.error": "无法连接到终端WebSocket",
   "terminal.input.empty": "请输入指令以发送",
   "terminal.input.placeholder": "发送指令...",
+  "terminal.filter.placeholder": "搜索终端日志...",
   "terminal.fullscreen": "全屏",
   "terminal.exit-fullscreen": "退出全屏",
   "terminal.send": "发送",

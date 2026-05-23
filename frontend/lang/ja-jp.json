@@ -387,6 +387,7 @@
   "terminal.ws.error": "端末のWebSocketに接続できません",
   "terminal.input.empty": "送信するために指示を入力してください",
   "terminal.input.placeholder": "コマンドを送信...",
+  "terminal.filter.placeholder": "ターミナルログを検索...",
   "terminal.fullscreen": "全画面",
   "terminal.exit-fullscreen": "全画面表示を終了",
   "terminal.send": "送信",

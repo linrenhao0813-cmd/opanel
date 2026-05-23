@@ -9,7 +9,7 @@ import {
   useRef,
   useState
 } from "react";
-import { ArrowUp, Filter, Maximize, Minimize, Pen, Plus, Regex, SquareTerminal, TextSearch, Trash2, X } from "lucide-react";
+import { ArrowUp, CaseSensitive, Filter, Maximize, Minimize, Pen, Plus, Regex, SquareTerminal, TextSearch, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { TerminalViewer } from "@/components/terminal-viewer";
@@ -73,6 +73,7 @@ export default function Terminal() {
 
   const [showSearchBox, setShowSearchBox] = useState(false);
   const [searchString, setSearchString] = useState("");
+  const [searchCaseSensitive, setSearchCaseSensitive] = useState(false);
   const [searchRegexMode, setSearchRegexMode] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -217,9 +218,7 @@ export default function Terminal() {
 
   useKeydown("f", { ctrl: true }, (e) => {
     e.preventDefault();
-
-    setSearchString("");
-    setShowSearchBox((prev) => !prev);
+    setShowSearchBox(true);
   });
 
   useKeydown("a", { ctrl: true }, (e) => {
@@ -228,10 +227,11 @@ export default function Terminal() {
     }
   });
 
-  useKeydown("Escape", {}, (e) => {
+  useKeydown("Escape", {}, () => {
     if(showSearchBox) {
       setSearchString("");
       setShowSearchBox(false);
+      inputRef.current?.focus();
     }
   });
 
@@ -249,6 +249,7 @@ export default function Terminal() {
           client={client}
           levels={getLogLevels(showInfoLevel, showWarnLevel, showErrorLevel)}
           filter={searchRegexMode ? parseRegex(searchString) : searchString}
+          filterCaseSensitive={searchCaseSensitive}
           className="flex-1 border-none"/>
         <div className="px-3 pt-1 flex justify-between items-center max-md:flex-col max-md:items-start max-md:gap-2">
           <div className={cn("flex flex-wrap items-center gap-1 transition-[gap]", editingShortcuts && "gap-3")}>
@@ -311,18 +312,27 @@ export default function Terminal() {
             </div>
           </div>
           {showSearchBox && (
-            <div className="min-w-64 py-1 min-md:self-end max-sm:min-w-full">
+            <div className="min-w-72 py-1 min-md:self-end max-sm:min-w-full">
               <InputGroup className="h-6 rounded-sm">
                 <InputGroupAddon className="pl-2">
                   <TextSearch />
                 </InputGroupAddon>
                 <InputGroupInput
                   autoFocus
+                  placeholder={$("terminal.filter.placeholder")}
                   value={searchString}
                   onChange={(e) => setSearchString(e.target.value)}
                   className={cn("px-2 text-xs!", googleSansCode.className)}
                   ref={searchInputRef}/>
-                <InputGroupAddon align="inline-end" className="pr-2">
+                <InputGroupAddon align="inline-end" className="pr-2 gap-0 *:px-1.5!">
+                  <InputGroupButton
+                    onClick={() => {
+                      setSearchCaseSensitive((prev) => !prev);
+                      searchInputRef.current?.focus();
+                    }}
+                    className={cn("cursor-pointer transition-none hover:text-muted-foreground hover:bg-transparent!", searchCaseSensitive && "text-theme hover:text-theme")}>
+                    <CaseSensitive className="size-4"/>
+                  </InputGroupButton>
                   <InputGroupButton
                     onClick={() => {
                       setSearchRegexMode((prev) => !prev);

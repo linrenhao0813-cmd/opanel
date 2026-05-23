@@ -97,12 +97,14 @@ export function TerminalViewer({
   simple,
   levels = ["INFO", "WARN", "ERROR"],
   filter,
+  filterCaseSensitive = false,
   className
 }: {
   client: TerminalClient | null
   simple?: boolean
   levels?: ConsoleLogLevel[]
   filter?: RegExp | string
+  filterCaseSensitive?: boolean
   className?: string
 }) {
   const terminalRef = useRef<HTMLDivElement>(null);
@@ -234,7 +236,10 @@ export function TerminalViewer({
           .filter(({ line }) => (
             !filter
             || (filter instanceof RegExp && filter.test(line))
-            || (typeof filter === "string" && line.includes(filter))
+            || (typeof filter === "string" && (
+              filterCaseSensitive && line.includes(filter)
+              || !filterCaseSensitive && line.toLowerCase().includes(filter.toLowerCase())
+            ))
           ))
           .map((log) => (
             <Log
