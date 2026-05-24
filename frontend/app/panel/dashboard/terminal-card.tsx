@@ -8,6 +8,7 @@ import { useWebSocket } from "@/hooks/use-websocket";
 import { TerminalViewer } from "@/components/terminal-viewer";
 import { $ } from "@/lib/i18n";
 import { TerminalClient } from "@/lib/ws/terminal";
+import { getSettings } from "@/lib/settings";
 
 export function TerminalCard({
   className,
@@ -24,7 +25,11 @@ export function TerminalCard({
       moreLink="/panel/terminal"
       className={className}
       innerClassName="p-2 pt-0 h-full max-xl:flex-1 flex flex-col gap-2 overflow-hidden">
-      <TerminalViewer client={client} simple className="flex-1"/>
+      <TerminalViewer
+        client={client}
+        simple
+        levels={getSettings("terminal.log-levels")}
+        className="flex-1"/>
       <Input
         className="w-full rounded-sm cursor-pointer"
         placeholder={$("dashboard.terminal.input.placeholder")}

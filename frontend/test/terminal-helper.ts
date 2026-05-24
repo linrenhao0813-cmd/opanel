@@ -43,6 +43,6 @@ export function createTerminalSettingsState(overrides?: {
       { name: "Set Day", command: "time set day" }
     ],
     "terminal.autocomplete": true,
-    "terminal.log-level": "INFO"
+    "terminal.log-levels": ["INFO", "WARN", "ERROR"]
   };
 }

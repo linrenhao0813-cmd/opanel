@@ -1,12 +1,11 @@
 "use client";
 
-import type { ConsoleLogLevel } from "@/lib/ws/terminal";
 import type { PropsWithChildren } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Settings as SettingsIcon } from "lucide-react";
+import { ChevronDown, Settings as SettingsIcon } from "lucide-react";
 import { changeSettings, getSettings, resetSettings, type SettingsStorageType } from "@/lib/settings";
 import { SubPage } from "../sub-page";
 import {
@@ -33,12 +32,21 @@ import { Switch } from "@/components/ui/switch";
 import { emitter } from "@/lib/emitter";
 import { toastRestartAlert } from "@/components/restart-alert";
 import { useLoadingDone } from "@/hooks/use-loading-done";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { getLogLevels } from "@/lib/ws/terminal";
 
 const SETTINGS_TAB_VALUES = ["general", "server", "terminal", "editor"] as const;
 
-function Section({ children }: PropsWithChildren) {
+function Section({ className, children }: PropsWithChildren & {
+  className?: string
+}) {
   return (
-    <div className="bg-background dark:bg-transparent border rounded-md flex flex-col">{children}</div>
+    <div className={cn("bg-background dark:bg-transparent border rounded-md flex flex-col", className)}>{children}</div>
   );
 }
 
@@ -88,6 +96,9 @@ export default function Settings() {
     : "general";
   const [openLaunchCommand, setOpenLaunchCommand] = useState(false);
   const [mapFeatureEnabled, setMapFeatureEnabled] = useState(false);
+  const [showInfoLevel, setShowInfoLevel] = useState(getSettings("terminal.log-levels").includes("INFO"));
+  const [showWarnLevel, setShowWarnLevel] = useState(getSettings("terminal.log-levels").includes("WARN"));
+  const [showErrorLevel, setShowErrorLevel] = useState(getSettings("terminal.log-levels").includes("ERROR"));
 
   const setTab = (value: string) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -134,6 +145,10 @@ export default function Settings() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  useEffect(() => {
+    changeSettings("terminal.log-levels", getLogLevels(showInfoLevel, showWarnLevel, showErrorLevel));
+  }, [showInfoLevel, showWarnLevel, showErrorLevel]);
 
   useEffect(() => {
     fetchMapFeatureEnabled();
@@ -179,7 +194,7 @@ export default function Settings() {
               description={$("settings.dashboard.monitor-interval.description")}
               control={<SettingsNumberInput id="dashboard.monitor-interval" min={1}/>}/>
           </Section>
-          <Section>
+          <Section className="mb-4">
             <SettingsItem
               id="players.avatar-provider"
               name={$("settings.players.avatar-provider")}
@@ -343,22 +358,31 @@ export default function Settings() {
               description={$("settings.terminal.max-log-lines.description")}
               control={<SettingsNumberInput id="terminal.max-log-lines" min={100} max={20000}/>}/>
             <SettingsItem
-              id="terminal.log-level"
-              name={$("settings.terminal.log-level")}
-              description={$("settings.terminal.log-level.description")}
+              id="terminal.log-levels"
+              name={$("settings.terminal.log-levels")}
+              description={$("settings.terminal.log-levels.description")}
               control={
-                <Select
-                  defaultValue={getSettings("terminal.log-level")}
-                  onValueChange={(value) => changeSettings("terminal.log-level", value as ConsoleLogLevel)}>
-                  <SelectTrigger className={cn(controlWidth, googleSansCode.className)}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className={googleSansCode.className}>
-                    <SelectItem value="INFO">INFO</SelectItem>
-                    <SelectItem value="WARN">WARN</SelectItem>
-                    <SelectItem value="ERROR">ERROR</SelectItem>
-                  </SelectContent>
-                </Select>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("justify-between [&>svg]:text-muted-foreground [&>svg]:opacity-50", controlWidth)}>
+                      选择等级
+                      <ChevronDown />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className={cn(controlWidth, googleSansCode.className)}>
+                    <DropdownMenuCheckboxItem checked={showInfoLevel} onCheckedChange={setShowInfoLevel}>
+                      INFO
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem checked={showWarnLevel} onCheckedChange={setShowWarnLevel}>
+                      WARN
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem checked={showErrorLevel} onCheckedChange={setShowErrorLevel}>
+                      ERROR
+                    </DropdownMenuCheckboxItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               }/>
             <SettingsItem
               id="terminal.log-time"

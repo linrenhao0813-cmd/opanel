@@ -8,8 +8,6 @@ import { googleSansCode } from "@/lib/fonts";
 import {
   type ConsoleLog,
   type TerminalClient,
-  defaultLogLevel,
-  getLogLevelId,
   type ConsoleLogLevel,
 } from "@/lib/ws/terminal";
 import { parseTextToANSI, secSign } from "@/lib/formatting-codes/text";
@@ -97,12 +95,16 @@ const Log = memo(({
 export function TerminalViewer({
   client,
   simple,
-  level,
+  levels = ["INFO", "WARN", "ERROR"],
+  filter,
+  filterCaseSensitive = false,
   className
 }: {
   client: TerminalClient | null
   simple?: boolean
-  level?: ConsoleLogLevel
+  levels?: ConsoleLogLevel[]
+  filter?: RegExp | string
+  filterCaseSensitive?: boolean
   className?: string
 }) {
   const terminalRef = useRef<HTMLDivElement>(null);
@@ -229,13 +231,24 @@ export function TerminalViewer({
     <div
       className={cn(className, "border rounded-sm bg-background overflow-auto o-scrollbar p-2")}
       ref={terminalRef}>
-      {logs.map((log) => (
-        <Log
-          {...log}
-          simple={simple}
-          visible={getLogLevelId(log.level) >= getLogLevelId(level ?? defaultLogLevel)}
-          key={log.uuid}/>
-      ))}
+      {
+        logs
+          .filter(({ line }) => (
+            !filter
+            || (filter instanceof RegExp && filter.test(line))
+            || (typeof filter === "string" && (
+              filterCaseSensitive && line.includes(filter)
+              || !filterCaseSensitive && line.toLowerCase().includes(filter.toLowerCase())
+            ))
+          ))
+          .map((log) => (
+            <Log
+              {...log}
+              simple={simple}
+              visible={levels.includes(log.level)}
+              key={log.uuid}/>
+          ))
+      }
     </div>
   );
 }

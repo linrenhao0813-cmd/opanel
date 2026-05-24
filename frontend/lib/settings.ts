@@ -23,7 +23,7 @@ export type SettingsStorageType = {
   "terminal.word-wrap": boolean
   "terminal.font-size": number
   "terminal.max-log-lines": number
-  "terminal.log-level": ConsoleLogLevel
+  "terminal.log-levels": ConsoleLogLevel[]
   "terminal.log-time": boolean
   "terminal.thread-name": boolean
   "terminal.source-name": boolean
@@ -61,7 +61,7 @@ const defaultSettings: SettingsStorageType = {
   "terminal.word-wrap": false,
   "terminal.font-size": 12, // px
   "terminal.max-log-lines": 1000,
-  "terminal.log-level": "INFO",
+  "terminal.log-levels": ["INFO", "WARN", "ERROR"],
   "terminal.log-time": true,
   "terminal.thread-name": true,
   "terminal.source-name": true,

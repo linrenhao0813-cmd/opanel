@@ -1,17 +1,16 @@
 import { toast } from "sonner";
 import { WebSocketClient } from ".";
 import { $ } from "../i18n";
-import { getSettings } from "../settings";
 
 export type ConsoleLogLevel = "INFO" | "WARN" | "ERROR";
-export const defaultLogLevel: ConsoleLogLevel = getSettings("terminal.log-level");
 
-export function getLogLevelId(level: ConsoleLogLevel) {
-  switch(level) {
-    case "INFO": return 1;
-    case "WARN": return 2;
-    case "ERROR": return 3;
-  }
+export function getLogLevels(info = true, warn = true, error = true): ConsoleLogLevel[] {
+  const levels: ConsoleLogLevel[] = [];
+  if(info) levels.push("INFO");
+  if(warn) levels.push("WARN");
+  if(error) levels.push("ERROR");
+
+  return levels;
 }
 
 export interface ConsoleLog {

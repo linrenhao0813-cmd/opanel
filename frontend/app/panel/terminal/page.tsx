@@ -9,7 +9,7 @@ import {
   useRef,
   useState
 } from "react";
-import { ArrowUp, Maximize, Minimize, Pen, Plus, SquareTerminal, Trash2, X } from "lucide-react";
+import { ArrowUp, CaseSensitive, Filter, Maximize, Minimize, Pen, Plus, Regex, SquareTerminal, TextSearch, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { TerminalViewer } from "@/components/terminal-viewer";
@@ -17,28 +17,42 @@ import { Button } from "@/components/ui/button";
 import { AutocompleteInput } from "@/components/autocomplete-input";
 import { cn, getCurrentArgumentIndex } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
 import { SubPage } from "../sub-page";
 import { changeSettings, getSettings } from "@/lib/settings";
 import { googleSansCode } from "@/lib/fonts";
 import { $ } from "@/lib/i18n";
-import { type ConsoleLogLevel, defaultLogLevel, TerminalClient } from "@/lib/ws/terminal";
+import { getLogLevels, TerminalClient } from "@/lib/ws/terminal";
 import { Toggle } from "@/components/ui/toggle";
 import { CreateShortcutDialog } from "./create-shortcut-dialog";
 import { VersionContext } from "@/contexts/api-context";
 import { emitter } from "@/lib/emitter";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput
+} from "@/components/ui/input-group";
+import { useKeydown } from "@/hooks/use-keydown";
 
 const MCDR_COMMAND_PREFIX = "!!";
 const MCDR_AUTOCOMPLETE_LIST = [
   "MCDR",
   "help"
 ];
+
+function parseRegex(regex: string): RegExp {
+  try {
+    return new RegExp(regex);
+  } catch {
+    return new RegExp("");
+  }
+}
 
 export default function Terminal() {
   const versionCtx = useContext(VersionContext);
@@ -49,11 +63,19 @@ export default function Terminal() {
   const [autocompleteList, setAutocompleteList] = useState<string[]>([]);
   const [historyList, setHistoryList] = useState<string[]>(getSettings("state.terminal.history"));
   const historyIndexRef = useRef(historyList.length);
-  const [logLevel, setLogLevel] = useState(defaultLogLevel);
+  const [showInfoLevel, setShowInfoLevel] = useState(getSettings("terminal.log-levels").includes("INFO"));
+  const [showWarnLevel, setShowWarnLevel] = useState(getSettings("terminal.log-levels").includes("WARN"));
+  const [showErrorLevel, setShowErrorLevel] = useState(getSettings("terminal.log-levels").includes("ERROR"));
   const [fullscreen, setFullscreen] = useState(false);
   const [shortcuts, setShortcuts] = useState<CommandShortcut[]>(getSettings("terminal.shortcuts"));
   const [editingShortcuts, setEditingShortcuts] = useState(false);
   const [isTypingMCDRCommand, setTypingMCDRCommand] = useState(false);
+
+  const [showSearchBox, setShowSearchBox] = useState(false);
+  const [searchString, setSearchString] = useState("");
+  const [searchCaseSensitive, setSearchCaseSensitive] = useState(false);
+  const [searchRegexMode, setSearchRegexMode] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleSend = useCallback(() => {
     if(!inputRef.current || !client) return;
@@ -185,10 +207,33 @@ export default function Terminal() {
   }, [shortcuts]);
 
   useEffect(() => {
+    changeSettings("terminal.log-levels", getLogLevels(showInfoLevel, showWarnLevel, showErrorLevel));
+  }, [showInfoLevel, showWarnLevel, showErrorLevel]);
+
+  useEffect(() => {
     document.addEventListener("fullscreenchange", handleFullscreenChange);
 
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
+
+  useKeydown("f", { ctrl: true }, (e) => {
+    e.preventDefault();
+    setShowSearchBox(true);
+  });
+
+  useKeydown("a", { ctrl: true }, (e) => {
+    if(showSearchBox) {
+      searchInputRef.current?.select();
+    }
+  });
+
+  useKeydown("Escape", {}, () => {
+    if(showSearchBox) {
+      setSearchString("");
+      setShowSearchBox(false);
+      inputRef.current?.focus();
+    }
+  });
 
   return (
     <SubPage
@@ -200,79 +245,129 @@ export default function Terminal() {
       <div
         className="flex-4/5 max-lg:flex-3/4 max-md:flex-2/3 min-w-0 min-h-0 bg-background flex flex-col border rounded-sm"
         ref={terminalContainerRef}>
-        <TerminalViewer client={client} level={logLevel} className="flex-1 border-none"/>
-        <div className={cn("px-3 pt-1 flex flex-wrap items-center gap-1 transition-[gap]", editingShortcuts && "gap-3")}>
-          {versionCtx?.mcdr && (
-            <Button
-              size="xs"
-              disabled={editingShortcuts}
-              className={cn("cursor-pointer", googleSansCode.className)}
-              onClick={() => {
-                if(!inputRef.current) return;
-                inputRef.current.value = "!!MCDR ";
-                inputRef.current.focus();
-              }}
-              onDoubleClick={() => handleSend()}>
-              !!MCDR
-            </Button>
-          )}
-          {shortcuts.map((shortcut, i) => (
-            <div
-              className="relative *:cursor-pointer"
-              key={i}>
+        <TerminalViewer
+          client={client}
+          levels={getLogLevels(showInfoLevel, showWarnLevel, showErrorLevel)}
+          filter={searchRegexMode ? parseRegex(searchString) : searchString}
+          filterCaseSensitive={searchCaseSensitive}
+          className="flex-1 border-none"/>
+        <div className="px-3 pt-1 flex justify-between items-center max-md:flex-col max-md:items-start max-md:gap-2">
+          <div className={cn("flex flex-wrap items-center gap-1 transition-[gap]", editingShortcuts && "gap-3")}>
+            {versionCtx?.mcdr && (
               <Button
-                variant="outline"
                 size="xs"
                 disabled={editingShortcuts}
+                className={cn("cursor-pointer", googleSansCode.className)}
                 onClick={() => {
                   if(!inputRef.current) return;
-                  inputRef.current.value = shortcut.command;
+                  inputRef.current.value = "!!MCDR ";
                   inputRef.current.focus();
                 }}
                 onDoubleClick={() => handleSend()}>
-                {shortcut.name}
+                !!MCDR
               </Button>
-              {editingShortcuts && (
-                <button
-                  className="absolute -top-1 -left-2 rounded-full bg-accent p-0.5 z-10"
-                  onClick={() => handleRemoveShortcut(i)}>
-                  <X size={13}/>
-                </button>
-              )}
-            </div>
-          ))}
-          <div className="flex *:cursor-pointer">
-            <CreateShortcutDialog
-              onCreate={(shortcut) => setShortcuts((current) => [...current, shortcut])}
-              asChild>
-              <Button
+            )}
+            {shortcuts.map((shortcut, i) => (
+              <div
+                className="relative *:cursor-pointer"
+                key={i}>
+                <Button
+                  variant="outline"
+                  size="xs"
+                  disabled={editingShortcuts}
+                  onClick={() => {
+                    if(!inputRef.current) return;
+                    inputRef.current.value = shortcut.command;
+                    inputRef.current.focus();
+                  }}
+                  onDoubleClick={() => handleSend()}>
+                  {shortcut.name}
+                </Button>
+                {editingShortcuts && (
+                  <button
+                    className="absolute -top-1 -left-2 rounded-full bg-accent p-0.5 z-10"
+                    onClick={() => handleRemoveShortcut(i)}>
+                    <X size={13}/>
+                  </button>
+                )}
+              </div>
+            ))}
+            <div className="flex *:cursor-pointer">
+              <CreateShortcutDialog
+                onCreate={(shortcut) => setShortcuts((current) => [...current, shortcut])}
+                asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-xs">
+                  <Plus />
+                </Button>
+              </CreateShortcutDialog>
+              <Toggle
                 variant="ghost"
-                size="icon-xs">
-                <Plus />
-              </Button>
-            </CreateShortcutDialog>
-            <Toggle
-              variant="ghost"
-              size="icon-xs"
-              className="data-[state=on]:*:fill-foreground"
-              onPressedChange={(pressed) => setEditingShortcuts(pressed)}>
-              <Pen />
-            </Toggle>
+                size="icon-xs"
+                className="data-[state=on]:*:fill-foreground"
+                onPressedChange={(pressed) => setEditingShortcuts(pressed)}>
+                <Pen />
+              </Toggle>
+            </div>
           </div>
+          {showSearchBox && (
+            <div className="min-w-72 py-1 min-md:self-end max-sm:min-w-full">
+              <InputGroup className="h-6 rounded-sm">
+                <InputGroupAddon className="pl-2">
+                  <TextSearch />
+                </InputGroupAddon>
+                <InputGroupInput
+                  autoFocus
+                  placeholder={$("terminal.filter.placeholder")}
+                  value={searchString}
+                  onChange={(e) => setSearchString(e.target.value)}
+                  className={cn("px-2 text-xs!", googleSansCode.className)}
+                  ref={searchInputRef}/>
+                <InputGroupAddon align="inline-end" className="pr-2 gap-0 *:px-1.5!">
+                  <InputGroupButton
+                    onClick={() => {
+                      setSearchCaseSensitive((prev) => !prev);
+                      searchInputRef.current?.focus();
+                    }}
+                    className={cn("cursor-pointer transition-none hover:text-muted-foreground hover:bg-transparent!", searchCaseSensitive && "text-theme hover:text-theme")}>
+                    <CaseSensitive className="size-4"/>
+                  </InputGroupButton>
+                  <InputGroupButton
+                    onClick={() => {
+                      setSearchRegexMode((prev) => !prev);
+                      searchInputRef.current?.focus();
+                    }}
+                    className={cn("cursor-pointer transition-none hover:text-muted-foreground hover:bg-transparent!", searchRegexMode && "text-theme hover:text-theme")}>
+                    <Regex />
+                  </InputGroupButton>
+                </InputGroupAddon>
+              </InputGroup>
+            </div>
+          )}
         </div>
         <div className="p-3 pt-2 flex gap-2">
-          <Select
-            defaultValue={defaultLogLevel}
-            onValueChange={(value) => setLogLevel(value as ConsoleLogLevel)}>
-            <SelectTrigger className={cn("w-24 max-sm:w-20", googleSansCode.className)} title="日志等级">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className={googleSansCode.className}>
-              <SelectItem value="INFO">INFO</SelectItem>
-              <SelectItem value="WARN">WARN</SelectItem>
-              <SelectItem value="ERROR">ERROR</SelectItem>
-            </SelectContent>
-          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer">
+                <Filter />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className={googleSansCode.className}>
+              <DropdownMenuCheckboxItem checked={showInfoLevel} onCheckedChange={setShowInfoLevel}>
+                INFO
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem checked={showWarnLevel} onCheckedChange={setShowWarnLevel}>
+                WARN
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem checked={showErrorLevel} onCheckedChange={setShowErrorLevel}>
+                ERROR
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <AutocompleteInput
             className={cn("flex-1 w-full rounded-sm", googleSansCode.className)}
             placeholder={$("terminal.input.placeholder")}
