@@ -125,6 +125,14 @@ public class FoliaServer extends BaseBukkitServer implements OPanelServer, CodeO
         return list;
     }
 
+    @Rewrite
+    @Override
+    public void removePlayerData(String uuid) throws IOException {
+        final Path playerDataFolder = server.getWorlds().getFirst().getWorldFolder().toPath().resolve("../../../players/data");
+        Files.deleteIfExists(playerDataFolder.resolve(uuid +".dat"));
+        Files.deleteIfExists(playerDataFolder.resolve(uuid +".dat_old"));
+    }
+
     @Override
     public void banIp(String ip) throws UnknownHostException {
         if(server.getIPBans().contains(ip)) return;

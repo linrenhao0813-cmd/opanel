@@ -123,7 +123,11 @@ public class SpigotServer extends BaseBukkitServer implements OPanelServer, Code
     @Rewrite
     @Override
     public void removePlayerData(String uuid) throws IOException {
-        final Path playerDataFolder = server.getWorlds().getFirst().getWorldFolder().toPath().resolve("players/data");
+        final Path playerDataFolder = (
+            BukkitUtils.isPaper()
+            ? server.getWorlds().getFirst().getWorldFolder().toPath().resolve("../../../players/data")
+            : server.getWorlds().getFirst().getWorldFolder().toPath().resolve("players/data")
+        );
         Files.deleteIfExists(playerDataFolder.resolve(uuid +".dat"));
         Files.deleteIfExists(playerDataFolder.resolve(uuid +".dat_old"));
     }
