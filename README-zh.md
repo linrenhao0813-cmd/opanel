@@ -29,6 +29,7 @@ OPanel 的功能包括：
 - 游戏规则编辑器：帮助您无需输入任何命令即可编辑游戏规则
 - 插件管理器：帮助您启用 / 禁用插件或模组，或查看插件的详细信息
 - 终端控制台：可以直接从 Web 面板发送消息或执行命令
+- 内置实时地图查看器
 - 服务器日志管理器和查看器
 - MCP 服务器: 通过[OPanel MCP](https://github.com/opanel-mc/opanel-mcp)，您可以使用AI智能体助手 (如 Claude Code, OpenClaw) 来管理您的服务器
 - 开放 API: 您可以通过配置 OPanel 的开放 API，在服务器官网展示实时服务器状态和数据
@@ -69,6 +70,8 @@ OPanel 的功能包括：
 
 [![Star History](https://api.star-history.com/svg?repos=opanel-mc/opanel&type=date&legend=top-left)](https://star-history.com/#opanel-mc/opanel&type=date&legend=top-left)
 
-## License
+## 许可
 
 [GPL-3.0](./LICENSE)
+
+[Third Party Notices](./ThirdPartyNotices.txt)
