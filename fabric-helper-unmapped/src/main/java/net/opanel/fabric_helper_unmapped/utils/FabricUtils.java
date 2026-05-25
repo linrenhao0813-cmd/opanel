@@ -4,9 +4,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.*;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.opanel.common.OPanelDimension;
 import net.opanel.common.OPanelServer;
 import net.opanel.event.EventManager;
 import net.opanel.event.EventType;
@@ -49,5 +51,17 @@ public class FabricUtils {
         if(world.dimension() != Level.OVERWORLD) return;
 
         EventManager.get().emit(EventType.CHUNK_DIRTY, new OPanelChunkDirtyEvent(pos.getX() >> 4, pos.getZ() >> 4));
+    }
+
+    /**
+     * @return the server level of the dimension (overworld by default)
+     */
+    public static ServerLevel getLevelByDimension(MinecraftServer server, OPanelDimension dimension) {
+        switch(dimension) {
+            case OVERWORLD -> { return server.overworld(); }
+            case NETHER -> { return server.getLevel(ServerLevel.NETHER); }
+            case THE_END -> { return server.getLevel(ServerLevel.END); }
+        }
+        return server.overworld();
     }
 }

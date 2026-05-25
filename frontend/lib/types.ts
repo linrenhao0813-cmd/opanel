@@ -25,6 +25,12 @@ export enum Difficulty {
   HARD = "hard"
 }
 
+export enum Dimension {
+  OVERWORLD = "overworld",
+  NETHER = "nether",
+  THE_END = "the_end"
+}
+
 export interface Save {
   name: string
   displayName: string // base64

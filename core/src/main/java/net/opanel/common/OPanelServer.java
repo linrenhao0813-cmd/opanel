@@ -54,8 +54,8 @@ public interface OPanelServer {
     void sendServerCommand(String command);
     List<String> getCommands();
     List<String> getCommandTabList(int argIndex, String command);
-    HashMap<String, Object> getGamerules();
-    void setGamerules(HashMap<String, Object> gamerules);
+    HashMap<String, Object> getGamerules(OPanelDimension dimension);
+    void setGamerules(OPanelDimension dimension, HashMap<String, Object> gamerules);
     void reload();
     void stop();
 

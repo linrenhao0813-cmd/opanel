@@ -3,9 +3,11 @@ package net.opanel.bukkit_helper.utils;
 import com.mojang.brigadier.CommandDispatcher;
 import de.tr7zw.changeme.nbtapi.iface.ReadWriteNBT;
 import de.tr7zw.changeme.nbtapi.iface.ReadWriteNBTCompoundList;
+import net.opanel.common.OPanelDimension;
 import net.opanel.utils.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
+import org.bukkit.World;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +53,22 @@ public class BukkitUtils {
         for(ReadWriteNBT item : tempList) {
             list.addCompound(item);
         }
+    }
+
+    /**
+     * @return the world of the dimension (overworld by default)
+     */
+    public static World getWorldByDimension(OPanelDimension dimension) {
+        for(World world : Bukkit.getWorlds()) {
+            if(
+                (world.getEnvironment() == World.Environment.NORMAL && dimension == OPanelDimension.OVERWORLD)
+                || (world.getEnvironment() == World.Environment.NETHER && dimension == OPanelDimension.NETHER)
+                || (world.getEnvironment() == World.Environment.THE_END && dimension == OPanelDimension.THE_END)
+            ) {
+                return world;
+            }
+        }
+        return Bukkit.getWorlds().get(0);
     }
 
     public static boolean isLeaves() {

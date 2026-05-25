@@ -160,9 +160,9 @@ public class WebServer {
                 post("launch-command", controlController.setLaunchCommand);
             });
             path("gamerules", () -> {
-                get("/", gamerulesController.getGamerules);
-                post("/", gamerulesController.changeGamerule);
-                patch("/", gamerulesController.patchGamerule); // for mcp
+                get("{dimName}", gamerulesController.getGamerules);
+                post("{dimName}", gamerulesController.changeGamerule);
+                patch("{dimName}", gamerulesController.patchGamerule); // for mcp
             });
             path("icon", () -> {
                 get("/", iconController.getFavicon);

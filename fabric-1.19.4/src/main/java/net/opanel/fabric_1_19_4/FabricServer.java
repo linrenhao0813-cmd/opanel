@@ -12,6 +12,7 @@ import net.minecraft.util.WorldSavePath;
 import net.minecraft.world.GameRules;
 import net.opanel.common.*;
 import net.opanel.fabric_helper.BaseFabricServer;
+import net.opanel.fabric_helper.utils.FabricUtils;
 import net.opanel.utils.Utils;
 
 import java.io.IOException;
@@ -182,8 +183,8 @@ public class FabricServer extends BaseFabricServer implements OPanelServer {
     }
 
     @Override
-    public HashMap<String, Object> getGamerules() {
-        final NbtCompound gamerulesNbt = server.getGameRules().toNbt();
+    public HashMap<String, Object> getGamerules(OPanelDimension dimension) {
+        final NbtCompound gamerulesNbt = FabricUtils.getWorldByDimension(server, dimension).getGameRules().toNbt();
         HashMap<String, Object> gamerules = new HashMap<>();
         for(String key : gamerulesNbt.getKeys()) {
             final String valueStr = gamerulesNbt.getString(key);
@@ -199,9 +200,9 @@ public class FabricServer extends BaseFabricServer implements OPanelServer {
     }
 
     @Override
-    public void setGamerules(HashMap<String, Object> gamerules) {
-        HashMap<String, Object> currentGamerules = getGamerules();
-        final GameRules gameRulesObj = server.getGameRules();
+    public void setGamerules(OPanelDimension dimension, HashMap<String, Object> gamerules) {
+        HashMap<String, Object> currentGamerules = getGamerules(dimension);
+        final GameRules gameRulesObj = FabricUtils.getWorldByDimension(server, dimension).getGameRules();
         GameRules.accept(new GameRules.Visitor() {
             @Override
             @SuppressWarnings("unchecked")

@@ -1,14 +1,14 @@
 "use client";
 
 import type { z } from "zod";
-import type { GamerulesResponse } from "@/lib/types";
 import Link from "next/link";
-import { useEffect, useMemo, useState, Fragment, useContext } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState, useContext, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { compare } from "semver";
-import { PencilRuler, Search } from "lucide-react";
+import { Flame, PencilRuler, Search, TentTree, View } from "lucide-react";
 import {
   Form,
   FormField,
@@ -18,8 +18,9 @@ import {
   generateFormSchema,
   type ServerGamerules
 } from "@/lib/gamerules";
+import { Dimension, type GamerulesResponse } from "@/lib/types";
 import { sendGetRequest, sendPostRequest, toastError } from "@/lib/api";
-import { cn, getCurrentState, isNumeric, objectToMap } from "@/lib/utils";
+import { cn, getCurrentState, getDimensionByName, isNumeric, objectToMap } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -41,8 +42,13 @@ import { VersionContext } from "@/contexts/api-context";
 import { useKeydown } from "@/hooks/use-keydown";
 import { Skeleton } from "@/components/ui/skeleton";
 import { emitter } from "@/lib/emitter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Gamerules() {
+  const { replace } = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const dimFromUrl = searchParams.get("dim");
   const versionCtx = useContext(VersionContext);
   const gamerulePresets = useMemo(() => {
     if(versionCtx && compare(versionCtx.version, "1.21.11") < 0) {
@@ -50,6 +56,11 @@ export default function Gamerules() {
     }
     return _gamerulePresets;
   }, [versionCtx]);
+  const [dimension, setDimension] = useState<Dimension>(
+    dimFromUrl
+    ? getDimensionByName(dimFromUrl)
+    : Dimension.OVERWORLD
+  );
   const [serverGamerules, setServerGamerules] = useState<ServerGamerules>({});
   const [searchString, setSearchString] = useState<string>("");
   const [hasChanged, setChanged] = useState<boolean>(false);
@@ -60,9 +71,9 @@ export default function Gamerules() {
     values: serverGamerules
   });
 
-  const fetchServerGamerules = async () => {
+  const fetchServerGamerules = useCallback(async () => {
     try {
-      const res = await sendGetRequest<GamerulesResponse>("/api/gamerules");
+      const res = await sendGetRequest<GamerulesResponse>(`/api/gamerules/${dimension}`);
       setServerGamerules(res.gamerules);
     } catch (e: any) {
       toastError(e, $("gamerules.fetch.error"), [
@@ -71,10 +82,11 @@ export default function Gamerules() {
     } finally {
       emitter.emit("loading-done");
     }
-  };
+  }, [dimension]);
 
   const handleSubmit = async (data: z.infer<typeof formSchema>) => {
     if(!(await getCurrentState(setChanged))) return;
+    const currentDim = await getCurrentState(setDimension);
 
     // Transform strings to numbers
     for(const key in data) {
@@ -85,7 +97,7 @@ export default function Gamerules() {
     }
     
     try {
-      await sendPostRequest("/api/gamerules", { gamerules: data });
+      await sendPostRequest(`/api/gamerules/${currentDim}`, { gamerules: data });
       toast.success($("gamerules.save.success"));
       setChanged(false);
     } catch (e: any) {
@@ -97,8 +109,14 @@ export default function Gamerules() {
   };
 
   useEffect(() => {
+    const next = new URLSearchParams(searchParams.toString());
+    next.set("dim", dimension);
+    replace(`${pathname}?${next.toString()}`);
+  }, [dimension, pathname, replace, searchParams, form]);
+
+  useEffect(() => {
     fetchServerGamerules();
-  }, []);
+  }, [fetchServerGamerules]);
 
   useKeydown("s", { ctrl: true }, () => form.handleSubmit(handleSubmit)());
   
@@ -111,7 +129,7 @@ export default function Gamerules() {
       outerClassName="max-h-screen overflow-y-hidden"
       pageClassName="min-xl:px-64!"
       className="flex-1 min-h-0 flex flex-col gap-3">
-      <div className="flex justify-between items-center gap-6 max-sm:flex-col-reverse max-sm:items-start">
+      <div className="flex justify-between items-center gap-3 max-sm:flex-col-reverse max-sm:items-start">
         <InputGroup className="flex-1">
           <InputGroupAddon>
             <Search />
@@ -122,7 +140,27 @@ export default function Gamerules() {
             autoFocus
             onChange={(e) => setSearchString(e.target.value)}/>
         </InputGroup>
-        <span className="text-sm text-muted-foreground">{$("gamerules.hint1")}</span>
+        <Select
+          value={dimension}
+          onValueChange={(value) => setDimension(value as Dimension)}>
+          <SelectTrigger className="w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={Dimension.OVERWORLD}>
+              <TentTree />
+              {$("gamerules.dimension.overworld")}
+            </SelectItem>
+            <SelectItem value={Dimension.NETHER}>
+              <Flame />
+              {$("gamerules.dimension.nether")}
+            </SelectItem>
+            <SelectItem value={Dimension.THE_END}>
+              <View />
+              {$("gamerules.dimension.the_end")}
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <Form {...form}>
         <form className="min-h-0 flex flex-col gap-4" onSubmit={form.handleSubmit(handleSubmit)} onChange={() => setChanged(true)}>
@@ -164,8 +202,7 @@ export default function Gamerules() {
                               if(typeof value === "boolean") {
                                 return (
                                   <Switch
-                                    {...field}
-                                    defaultChecked={value as boolean}
+                                    checked={field.value as boolean}
                                     onCheckedChange={field.onChange}
                                     className="cursor-pointer"/>
                                 );
@@ -199,7 +236,7 @@ export default function Gamerules() {
           </div>
           <div className="flex max-lg:flex-col justify-between items-center max-lg:items-start max-lg:gap-4">
             <Text
-              id="gamerules.hint3"
+              id="gamerules.hint2"
               args={[
                 <Link
                   href="https://zh.minecraft.wiki/w/游戏规则#游戏规则列表"
@@ -212,7 +249,7 @@ export default function Gamerules() {
               className="text-sm text-muted-foreground"/>
             <div className="flex max-lg:flex-row-reverse items-center gap-2 [&>button]:cursor-pointer">
               <Text
-                id="gamerules.hint2"
+                id="gamerules.hint1"
                 args={[
                   <><kbd>ctrl</kbd>+<kbd>S</kbd></>
                 ]}

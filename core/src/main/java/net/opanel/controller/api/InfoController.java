@@ -3,6 +3,7 @@ package net.opanel.controller.api;
 import io.javalin.http.Handler;
 import io.javalin.http.HttpStatus;
 import net.opanel.OPanel;
+import net.opanel.common.OPanelDimension;
 import net.opanel.time.TPS;
 import net.opanel.utils.Utils;
 import net.opanel.controller.BaseController;
@@ -31,9 +32,9 @@ public class InfoController extends BaseController {
         HashMap<String, Object> ingameTimeObj = new HashMap<>();
         ingameTimeObj.put("current", server.getIngameTime());
         ingameTimeObj.put("doDaylightCycle", (
-            server.getGamerules().get("doDaylightCycle") != null
-            ? server.getGamerules().get("doDaylightCycle")
-            : server.getGamerules().get("advance_time")
+            server.getGamerules(OPanelDimension.OVERWORLD).get("doDaylightCycle") != null
+            ? server.getGamerules(OPanelDimension.OVERWORLD).get("doDaylightCycle")
+            : server.getGamerules(OPanelDimension.OVERWORLD).get("advance_time")
         ));
         ingameTimeObj.put("paused", TPS.isPaused());
         ingameTimeObj.put("mspt", TPS.getRecentMSPT());

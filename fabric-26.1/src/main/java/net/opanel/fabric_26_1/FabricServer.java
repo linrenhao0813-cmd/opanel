@@ -12,6 +12,7 @@ import net.minecraft.world.level.storage.LevelResource;
 import net.opanel.common.*;
 import net.opanel.common.features.CodeOfConductFeature;
 import net.opanel.fabric_helper_unmapped.BaseFabricServer;
+import net.opanel.fabric_helper_unmapped.utils.FabricUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -174,9 +175,9 @@ public class FabricServer extends BaseFabricServer implements OPanelServer, Code
     }
 
     @Override
-    public HashMap<String, Object> getGamerules() {
+    public HashMap<String, Object> getGamerules(OPanelDimension dimension) {
         HashMap<String, Object> gamerules = new HashMap<>();
-        final GameRules gameRulesObj = server.overworld().getGameRules();
+        final GameRules gameRulesObj = FabricUtils.getLevelByDimension(server, dimension).getGameRules();
         gameRulesObj.visitGameRuleTypes(new GameRuleTypeVisitor() {
             @Override
             public <T> void visit(GameRule<T> rule) {
@@ -191,9 +192,9 @@ public class FabricServer extends BaseFabricServer implements OPanelServer, Code
     }
 
     @Override
-    public void setGamerules(HashMap<String, Object> gamerules) {
-        HashMap<String, Object> currentGamerules = getGamerules();
-        final GameRules gameRulesObj = server.overworld().getGameRules();
+    public void setGamerules(OPanelDimension dimension, HashMap<String, Object> gamerules) {
+        HashMap<String, Object> currentGamerules = getGamerules(dimension);
+        final GameRules gameRulesObj = FabricUtils.getLevelByDimension(server, dimension).getGameRules();
         gameRulesObj.visitGameRuleTypes(new GameRuleTypeVisitor() {
             @Override
             @SuppressWarnings("unchecked")

@@ -18,6 +18,7 @@ import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 import net.opanel.common.*;
 import net.opanel.exception.ActLaterException;
+import net.opanel.neoforge_1_21_1.utils.NeoUtils;
 import net.opanel.utils.Utils;
 
 import java.io.IOException;
@@ -287,8 +288,8 @@ public class NeoServer implements OPanelServer {
     }
 
     @Override
-    public HashMap<String, Object> getGamerules() {
-        final CompoundTag gamerulesNbt = server.getGameRules().createTag();
+    public HashMap<String, Object> getGamerules(OPanelDimension dimension) {
+        final CompoundTag gamerulesNbt = NeoUtils.getLevelByDimension(server, dimension).getGameRules().createTag();
         HashMap<String, Object> gamerules = new HashMap<>();
         for(String key : gamerulesNbt.getAllKeys()) {
             final String valueStr = gamerulesNbt.getString(key);
@@ -304,9 +305,9 @@ public class NeoServer implements OPanelServer {
     }
 
     @Override
-    public void setGamerules(HashMap<String, Object> gamerules) {
-        HashMap<String, Object> currentGamerules = getGamerules();
-        final GameRules gameRulesObj = server.getGameRules();
+    public void setGamerules(OPanelDimension dimension, HashMap<String, Object> gamerules) {
+        HashMap<String, Object> currentGamerules = getGamerules(dimension);
+        final GameRules gameRulesObj = NeoUtils.getLevelByDimension(server, dimension).getGameRules();
         GameRules.visitGameRuleTypes(new GameRules.GameRuleTypeVisitor() {
             @Override
             @SuppressWarnings("unchecked")

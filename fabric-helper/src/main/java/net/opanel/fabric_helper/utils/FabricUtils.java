@@ -3,9 +3,12 @@ package net.opanel.fabric_helper.utils;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.*;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.opanel.common.OPanelDimension;
 import net.opanel.common.OPanelServer;
 import net.opanel.event.EventManager;
 import net.opanel.event.EventType;
@@ -48,5 +51,17 @@ public class FabricUtils {
         if(world.getRegistryKey() != World.OVERWORLD) return;
 
         EventManager.get().emit(EventType.CHUNK_DIRTY, new OPanelChunkDirtyEvent(pos.getX() >> 4, pos.getZ() >> 4));
+    }
+
+    /**
+     * @return the server world of the dimension (overworld by default)
+     */
+    public static ServerWorld getWorldByDimension(MinecraftServer server, OPanelDimension dimension) {
+        switch(dimension) {
+            case OVERWORLD -> { return server.getOverworld(); }
+            case NETHER -> { return server.getWorld(ServerWorld.NETHER); }
+            case THE_END -> { return server.getWorld(ServerWorld.END); }
+        }
+        return server.getOverworld();
     }
 }

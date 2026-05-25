@@ -15,6 +15,7 @@ import net.minecraftforge.forgespi.locating.IModFile;
 import net.opanel.common.*;
 import net.opanel.common.features.CodeOfConductFeature;
 import net.opanel.forge_helper.BaseForgeServer;
+import net.opanel.forge_helper.utils.ForgeUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -179,9 +180,9 @@ public class ForgeServer extends BaseForgeServer implements OPanelServer, CodeOf
     }
 
     @Override
-    public HashMap<String, Object> getGamerules() {
+    public HashMap<String, Object> getGamerules(OPanelDimension dimension) {
         HashMap<String, Object> gamerules = new HashMap<>();
-        final GameRules gameRulesObj = server.overworld().getGameRules();
+        final GameRules gameRulesObj = ForgeUtils.getLevelByDimension(server, dimension).getGameRules();
         gameRulesObj.visitGameRuleTypes(new GameRuleTypeVisitor() {
             @Override
             public <T> void visit(GameRule<T> rule) {
@@ -196,9 +197,9 @@ public class ForgeServer extends BaseForgeServer implements OPanelServer, CodeOf
     }
 
     @Override
-    public void setGamerules(HashMap<String, Object> gamerules) {
-        HashMap<String, Object> currentGamerules = getGamerules();
-        final GameRules gameRulesObj = server.overworld().getGameRules();
+    public void setGamerules(OPanelDimension dimension, HashMap<String, Object> gamerules) {
+        HashMap<String, Object> currentGamerules = getGamerules(dimension);
+        final GameRules gameRulesObj = ForgeUtils.getLevelByDimension(server, dimension).getGameRules();
         gameRulesObj.visitGameRuleTypes(new GameRuleTypeVisitor() {
             @Override
             @SuppressWarnings("unchecked")
