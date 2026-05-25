@@ -3,7 +3,7 @@
 import type { z } from "zod";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, useContext, useCallback } from "react";
+import { useEffect, useMemo, useState, useContext, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -64,6 +64,7 @@ export default function Gamerules() {
   const [serverGamerules, setServerGamerules] = useState<ServerGamerules>({});
   const [searchString, setSearchString] = useState<string>("");
   const [hasChanged, setChanged] = useState<boolean>(false);
+  const isResettingRef = useRef<boolean>(false);
   const gamerulesMap = useMemo(() => objectToMap(serverGamerules), [serverGamerules]);
   const formSchema = useMemo(() => generateFormSchema(serverGamerules), [serverGamerules]);
   const form = useForm<z.infer<typeof formSchema>>({
@@ -74,7 +75,10 @@ export default function Gamerules() {
   const fetchServerGamerules = useCallback(async () => {
     try {
       const res = await sendGetRequest<GamerulesResponse>(`/api/gamerules/${dimension}`);
+      isResettingRef.current = true;
       setServerGamerules(res.gamerules);
+      setChanged(false);
+      setTimeout(() => { isResettingRef.current = false; }, 0); // register macro task
     } catch (e: any) {
       toastError(e, $("gamerules.fetch.error"), [
         [401, $("common.error.401")]
@@ -163,7 +167,13 @@ export default function Gamerules() {
         </Select>
       </div>
       <Form {...form}>
-        <form className="min-h-0 flex flex-col gap-4" onSubmit={form.handleSubmit(handleSubmit)} onChange={() => setChanged(true)}>
+        <form
+          className="min-h-0 flex flex-col gap-4"
+          onSubmit={form.handleSubmit(handleSubmit)}
+          onChange={() => {
+            if(isResettingRef.current) return;
+            setChanged(true);
+          }}>
           <div className="flex-1 overflow-y-auto o-scrollbar space-y-5 pr-2">
             {
               Object.keys(serverGamerules).length > 0
