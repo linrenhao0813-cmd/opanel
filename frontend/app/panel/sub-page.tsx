@@ -7,7 +7,6 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
 
@@ -55,9 +54,7 @@ export function SubPage({
                       {subTitle && (
                         <>
                           <BreadcrumbSeparator />
-                          <BreadcrumbItem>
-                            <BreadcrumbPage>{title}</BreadcrumbPage>
-                          </BreadcrumbItem>
+                          <BreadcrumbItem>{title}</BreadcrumbItem>
                         </>
                       )}
                     </BreadcrumbList>

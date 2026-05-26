@@ -141,7 +141,7 @@ export default function Inventory() {
       title={$("players.title")}
       subTitle={$("players.inventory.title")}
       description={$("players.inventory.description")}
-      category={$("sidebar.server")}
+      category={$("sidebar.management")}
       icon={<Backpack />}
       pageClassName="min-xl:px-64!"
       className="min-h-0 h-full flex gap-4 max-lg:flex-col max-lg:items-center">
