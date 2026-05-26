@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ChevronDown, Settings as SettingsIcon } from "lucide-react";
+import { ChevronDown, Cog, FilePen, Server, SettingsIcon, SquareTerminal } from "lucide-react";
 import { changeSettings, getSettings, resetSettings, type SettingsStorageType } from "@/lib/settings";
 import { SubPage } from "../sub-page";
 import {
@@ -163,7 +163,7 @@ export default function Settings() {
       title={$("settings.title")}
       icon={<SettingsIcon />}
       pageClassName="min-xl:px-64!">
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex justify-end min-sm:hidden">
         <Button
           variant="outline"
           className="cursor-pointer"
@@ -179,13 +179,38 @@ export default function Settings() {
         value={currentTab}
         onValueChange={setTab}
         className="mt-4 [&>[data-slot=tabs-content]]:mt-4">
-        <TabsList>
-          {SETTINGS_TAB_VALUES.map((value) => (
-            <TabsTrigger key={value} value={value}>
-              {$(`settings.${value}.title`)}
+        <div className="flex items-end">
+          <TabsList>
+            <TabsTrigger value="general">
+              <Cog />
+              {$("settings.general.title")}
             </TabsTrigger>
-          ))}
-        </TabsList>
+            <TabsTrigger value="server">
+              <Server />
+              {$("settings.server.title")}
+            </TabsTrigger>
+            <TabsTrigger value="terminal">
+              <SquareTerminal />
+              {$("settings.terminal.title")}
+            </TabsTrigger>
+            <TabsTrigger value="editor">
+              <FilePen />
+              {$("settings.editor.title")}
+            </TabsTrigger>
+          </TabsList>
+          <div className="pb-2 border-b max-sm:hidden">
+            <Button
+              variant="outline"
+              className="cursor-pointer"
+              onClick={async () => {
+                resetSettings();
+                await sendDeleteRequest("/assets/reset/login-banner");
+                window.location.reload();
+              }}>
+              {$("settings.reset")}
+            </Button>
+          </div>
+        </div>
         <TabsContent value="general" className="space-y-3">
           <Section>
             <SettingsItem

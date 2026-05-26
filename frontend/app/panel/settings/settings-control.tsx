@@ -1,8 +1,8 @@
 import type { ChangeEvent } from "react";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { changeSettings, getSettings, type SettingsStorageType } from "@/lib/settings";
-import React, { useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { $ } from "@/lib/i18n";
 
