@@ -5,6 +5,12 @@ import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
 import Settings from "./page";
 
+globalThis.ResizeObserver = globalThis.ResizeObserver ?? class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 const mockReplace = vi.fn();
 let mockTab: string | null = null;
 let mockPathname: string;
@@ -25,7 +31,7 @@ vi.mock("@/lib/settings", () => ({
   getSettings: vi.fn((key: string) => {
     if(key === "dashboard.monitor-interval" || key === "terminal.font-size" || key === "monaco.font-size") return 14;
     if(key === "terminal.max-log-lines" || key === "code-of-conduct.auto-saving-interval") return 1000;
-    if(key === "terminal.log-level") return "INFO";
+    if(key === "terminal.log-levels") return ["INFO", "WARN", "ERROR"];
     if(key === "system.language") return "zh-CN";
     return "";
   }),
