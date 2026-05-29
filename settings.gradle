@@ -21,47 +21,64 @@ plugins {
 rootProject.name = 'opanel'
 
 include 'core'
-include 'fabric-helper'
-include 'fabric-helper-unmapped'
-include 'fabric-1.19'
-include 'fabric-1.19.4'
-include 'fabric-1.20'
-include 'fabric-1.20.2'
-include 'fabric-1.20.3'
-include 'fabric-1.20.5'
-include 'fabric-1.21'
-include 'fabric-1.21.2'
-include 'fabric-1.21.5'
-include 'fabric-1.21.9'
-include 'fabric-1.21.11'
-include 'fabric-26.1'
-include 'forge-helper'
-include 'forge-1.19.4'
-include 'forge-1.20.1'
-include 'forge-1.20.2'
-include 'forge-1.20.3'
-include 'forge-1.20.6'
-include 'forge-1.21'
-include 'forge-1.21.3'
-include 'forge-1.21.5'
-include 'forge-1.21.8'
-include 'forge-1.21.9'
-include 'forge-1.21.11'
-include 'forge-26.1'
-include 'neoforge-helper'
-include 'neoforge-1.21.1'
-include 'neoforge-1.21.3'
-include 'neoforge-1.21.5'
-include 'bukkit-helper'
-include 'spigot-1.16.1'
-include 'spigot-1.19.4'
-include 'spigot-1.20'
-include 'spigot-1.20.5'
-include 'spigot-1.21'
-include 'spigot-1.21.9'
-include 'spigot-26.1'
-include 'folia-1.20'
-include 'folia-1.20.5'
-include 'folia-1.21'
-include 'folia-1.21.11'
-include 'folia-26.1.2'
+
+def platformModules = [
+    fabric: [
+        'fabric-helper',
+        'fabric-1.19',
+        'fabric-1.19.4',
+        'fabric-1.20',
+        'fabric-1.20.2',
+        'fabric-1.20.3',
+        'fabric-1.20.5',
+        'fabric-1.21',
+        'fabric-1.21.2',
+        'fabric-1.21.5',
+        'fabric-1.21.9',
+        'fabric-1.21.11',
+        'fabric-helper-unmapped',
+        'fabric-26.1'
+    ],
+    forge: [
+        'forge-helper',
+        'forge-1.19.4',
+        'forge-1.20.1',
+        'forge-1.20.2',
+        'forge-1.20.3',
+        'forge-1.20.6',
+        'forge-1.21',
+        'forge-1.21.3',
+        'forge-1.21.5',
+        'forge-1.21.8',
+        'forge-1.21.9',
+        'forge-1.21.11',
+        'forge-26.1'
+    ],
+    neoforge: [
+        'neoforge-helper',
+        'neoforge-1.21.1',
+        'neoforge-1.21.3',
+        'neoforge-1.21.5'
+    ],
+    bukkit: [
+        'bukkit-helper',
+        'spigot-1.16.1',
+        'spigot-1.19.4',
+        'spigot-1.20',
+        'spigot-1.20.5',
+        'spigot-1.21',
+        'spigot-1.21.9',
+        'spigot-26.1',
+        'folia-1.20',
+        'folia-1.20.5',
+        'folia-1.21',
+        'folia-1.21.11',
+        'folia-26.1.2'
+    ],
+]
+platformModules.each { platform, modules ->
+    modules.each { m ->
+        include m
+        project(":${m}").projectDir = file("${platform}/${m}")
+    }
+}
