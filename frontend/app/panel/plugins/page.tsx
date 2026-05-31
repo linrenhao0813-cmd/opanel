@@ -2,8 +2,9 @@
 
 import type { Plugin, PluginsResponse } from "@/lib/types";
 import { type DragEvent, useContext, useEffect, useRef, useState } from "react";
-import { Blocks, PackageCheck, PackageX, RotateCw, Search, Upload } from "lucide-react";
+import { Blocks, Download, PackageCheck, PackageX, RotateCw, Search, Upload } from "lucide-react";
 import { toast } from "sonner";
+import download from "downloadjs";
 import { SubPage } from "../sub-page";
 import { changeSettings, getSettings, type SettingsStorageType } from "@/lib/settings";
 import { $ } from "@/lib/i18n";
@@ -32,6 +33,8 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 
 const DISABLED_SUFFIX = ".disabled";
+
+type ExportPlugin = Omit<Plugin, "enabled" | "loaded" | "size" | "icon">;
 
 export default function Plugins() {
   type TabValueType = SettingsStorageType["state.plugins.tab"];
@@ -69,6 +72,20 @@ export default function Plugins() {
     } finally {
       emitter.emit("loading-done");
     }
+  };
+
+  const handleExportList = () => {
+    const exportPlugins: ExportPlugin[] = plugins
+      .filter(({ loaded }) => loaded)
+      .map(({ fileName, name, version, description, authors, website }) => ({
+        fileName: base64ToString(fileName),
+        name,
+        version,
+        description: description ? base64ToString(description) : "",
+        authors,
+        website
+      }));
+    download(JSON.stringify(exportPlugins, null, 2), "plugins.json", "application/json");
   };
 
   const handleUpload = async (file: File) => {
@@ -191,6 +208,12 @@ export default function Plugins() {
                   placeholder={$("plugins.search.placeholder")}
                   onChange={(e) => setSearchString(e.target.value)}/>
               </InputGroup>
+              <Button
+                variant="outline"
+                onClick={() => handleExportList()}>
+                <Download />
+                {$("plugins.action.export")}
+              </Button>
               <AlertDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
                 <AlertDialogTrigger asChild>
                   <Button className="cursor-pointer">

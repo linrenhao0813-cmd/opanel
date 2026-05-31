@@ -2,7 +2,9 @@
 
 import type { Player, PlayersResponse, UnnamedPlayer } from "@/lib/types";
 import { useEffect, useMemo, useState } from "react";
-import { Ban, Contact, RotateCw, Search, UserPen, Users } from "lucide-react";
+import { Ban, Contact, Download, RotateCw, Search, UserPen, Users } from "lucide-react";
+import download from "downloadjs";
+import { base64ToString } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/data-table";
 import { sendGetRequest, toastError } from "@/lib/api";
@@ -19,6 +21,8 @@ import { $ } from "@/lib/i18n";
 import { PlayersClient } from "@/lib/ws/players";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useKeydown } from "@/hooks/use-keydown";
+
+type ExportPlayer = Omit<Player, "isOnline" | "ping" | "ip" | "joinTime">;
 
 export default function Players() {
   type TabValueType = SettingsStorageType["state.players.tab"];
@@ -45,6 +49,20 @@ export default function Players() {
         [401, $("common.error.401")]
       ]);
     }
+  };
+
+  const handleExportList = () => {
+    const exportPlayers: ExportPlayer[] = players
+      .map(({ name, uuid, isOp, isBanned, gamemode, banReason, isWhitelisted }) => ({
+        name,
+        uuid,
+        isOp,
+        isBanned,
+        gamemode,
+        banReason: banReason ? base64ToString(banReason) : "",
+        isWhitelisted
+      }));
+    download(JSON.stringify(exportPlayers, null, 2), "players.json", "application/json");
   };
 
   useEffect(() => {
@@ -137,6 +155,12 @@ export default function Players() {
                 placeholder={$("players.search.placeholder")}
                 onChange={(e) => setSearchString(e.target.value)}/>
             </InputGroup>
+            <Button
+              variant="outline"
+              onClick={() => handleExportList()}>
+              <Download />
+              {$("players.action.export")}
+            </Button>
             <BannedIpsDialog asChild>
               <Button variant="outline">
                 <Ban />
