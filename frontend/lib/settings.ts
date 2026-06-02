@@ -40,6 +40,7 @@ export type SettingsStorageType = {
   "system.mcp"?: never
   "system.access-key"?: never
   "system.check-update"?: never
+  "state.sidebar.open": boolean
   "state.players.tab": "player-list" | "banned-list"
   "state.plugins.tab": "enabled-list" | "disabled-list"
   "state.terminal.history": string[]
@@ -79,6 +80,7 @@ const defaultSettings: SettingsStorageType = {
   "monaco.font-size": 13, // px
   "system.language": "zh-cn",
   "system.preview-channel": isPreviewVersion(version),
+  "state.sidebar.open": true,
   "state.players.tab": "player-list",
   "state.plugins.tab": "enabled-list",
   "state.terminal.history": [],
