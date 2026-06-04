@@ -1,7 +1,7 @@
 import type { GameMode } from "@/lib/types";
 import { toast } from "sonner";
 import { sendDeleteRequest, sendPostRequest, toastError } from "@/lib/api";
-import { gameModeToString, stringToBase64 } from "@/lib/utils";
+import { gameModeToString, stringToBase64, validateIpv4Address } from "@/lib/utils";
 import { $ } from "@/lib/i18n";
 
 export async function giveOp(uuid: string, doToast = true) {
@@ -136,3 +136,32 @@ export async function removeFromWhitelist(name: string, uuid: string, doToast = 
     ]);
   }
 }
+
+export async function banIp(ip: string, doToast = true) {
+  if(ip === "" || !validateIpv4Address(ip)) {
+    toast.error($("players.banned-ips.add.error"), { description: $("players.banned-ips.add.error.400") });
+    return;
+  }
+  
+  try {
+    await sendPostRequest(`/api/banned-ips/add?ip=${ip}`);
+    doToast && toast.success($("players.banned-ips.add.success"));
+  } catch (e: any) {
+    toastError(e, $("players.banned-ips.add.error"), [
+      [400, $("players.banned-ips.add.error.400")],
+      [401, $("common.error.401")]
+    ]);
+  }
+};
+
+export async function pardonIp(ip: string, doToast = true) {
+  try {
+    await sendPostRequest(`/api/banned-ips/remove?ip=${ip}`);
+    doToast && toast.success($("players.banned-ips.pardon.success"));
+  } catch (e: any) {
+    toastError(e, $("players.banned-ips.pardon.error"), [
+      [400, $("players.banned-ips.pardon.error.400")],
+      [401, $("common.error.401")]
+    ]);
+  }
+};

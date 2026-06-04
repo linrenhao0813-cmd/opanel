@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type PropsWithChildren } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Backpack, Ban, BrushCleaning, ShieldOff, UserMinus, UserPlus } from "lucide-react";
+import { Backpack, Ban, BrushCleaning, Copy, ShieldOff, UserMinus, UserPlus } from "lucide-react";
 import {
   Sheet,
   SheetClose,
@@ -33,6 +33,7 @@ import { Prompt } from "@/components/prompt";
 import {
   addToWhitelist,
   ban,
+  banIp,
   depriveOp,
   giveOp,
   kick,
@@ -43,6 +44,9 @@ import {
 import { emitter } from "@/lib/emitter";
 import { millisToTime } from "@/lib/time";
 import { $ } from "@/lib/i18n";
+import { Alert } from "@/components/alert";
+import { cn, copyToClipboard } from "@/lib/utils";
+import { googleSansCode } from "@/lib/fonts";
 
 const formSchema = z.object({
   gamemode: z.enum(Object.values(GameMode) as [string, ...string[]]),
@@ -81,6 +85,13 @@ export function PlayerSheet({
     emitter.emit("refresh-data");
   };
 
+  const handleBanIp = async () => {
+    if(player.isBanned || !player.ip) return;
+
+    await banIp(player.ip);
+    await kick(player.uuid, undefined, false);
+  };
+
   useEffect(() => {
     if(!player.isOnline) return;
 
@@ -114,24 +125,61 @@ export function PlayerSheet({
               <SkinViewer
                 name={player.name}
                 uuid={player.uuid}/>
-              <div className="flex justify-center items-center gap-2">
-                <OnlineBadge isOnline={player.isOnline}/>
-                {
-                  player.name
-                  ? <h2 className="inline-block text-lg font-semibold">{player.name}</h2>
-                  : (
-                    <span className="text-muted-foreground italic">
-                      &lt;{$("players.unnamed")}&gt;
-                    </span>
-                  )
-                }
+              
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center gap-2">
+                  <OnlineBadge isOnline={player.isOnline}/>
+                  {
+                    player.name
+                    ? <h2 className="inline-block text-lg font-semibold">{player.name}</h2>
+                    : (
+                      <span className="text-muted-foreground italic">
+                        &lt;{$("players.unnamed")}&gt;
+                      </span>
+                    )
+                  }
+                  {player.name && (
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      className="cursor-pointer text-muted-foreground! hover:bg-transparent! *:size-3!"
+                      onClick={() => copyToClipboard(player.name)}>
+                      <Copy />
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex items-center">
+                  <span className={cn("text-xs text-muted-foreground", googleSansCode.className)}>
+                    {player.uuid}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="cursor-pointer text-muted-foreground! hover:bg-transparent! *:size-3!"
+                    onClick={() => copyToClipboard(player.uuid)}>
+                    <Copy />
+                  </Button>
+                </div>
               </div>
+
               {player.isOnline && (
                 <div className="flex flex-col gap-3">
                   {player.ip && (
                     <FormItem className="flex justify-between">
                       <FormLabel>{$("players.edit.form.ip")}</FormLabel>
-                      <span className="text-sm">{player.ip}</span>
+                      <span className="text-sm">
+                        <Alert
+                          title={$("players.edit.form.ip.alert.title", player.ip)}
+                          description={$("players.edit.form.ip.alert.description")}
+                          onAction={() => handleBanIp()}
+                          asChild>
+                          <button className="cursor-pointer mr-1.5 text-destructive">
+                            <Ban size={12}/>
+                          </button>
+                        </Alert>
+                        {player.ip}
+                      </span>
                     </FormItem>
                   )}
                   <FormItem className="flex justify-between">

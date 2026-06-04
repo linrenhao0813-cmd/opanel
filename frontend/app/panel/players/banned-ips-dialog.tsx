@@ -20,10 +20,11 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { sendGetRequest, sendPostRequest, toastError } from "@/lib/api";
-import { cn, validateIpv4Address } from "@/lib/utils";
+import { sendGetRequest, toastError } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { emitter } from "@/lib/emitter";
 import { $ } from "@/lib/i18n";
+import { banIp, pardonIp } from "./player-utils";
 
 export function BannedIpsDialog({
   children,
@@ -47,40 +48,20 @@ export function BannedIpsDialog({
     }
   };
 
-  const banIp = async (ip: string) => {
-    if(ip === "" || !validateIpv4Address(ip)) {
-      toast.error($("players.banned-ips.add.error"), { description: $("players.banned-ips.add.error.400") });
-      return;
-    }
+  const handleBanIp = async (ip: string) => {
     if(bannedIps.includes(ip)) {
       toast.warning($("players.banned-ips.add.exist"));
       return;
     }
     
-    try {
-      await sendPostRequest(`/api/banned-ips/add?ip=${ip}`);
-      setInputtedIp("");
-      emitter.emit("refresh-data");
-      toast.success($("players.banned-ips.add.success"));
-    } catch (e: any) {
-      toastError(e, $("players.banned-ips.add.error"), [
-        [400, $("players.banned-ips.add.error.400")],
-        [401, $("common.error.401")]
-      ]);
-    }
+    await banIp(ip);
+    setInputtedIp("");
+    emitter.emit("refresh-data");
   };
 
-  const pardonIp = async (ip: string) => {
-    try {
-      await sendPostRequest(`/api/banned-ips/remove?ip=${ip}`);
-      emitter.emit("refresh-data");
-      toast.success($("players.banned-ips.pardon.success"));
-    } catch (e: any) {
-      toastError(e, $("players.banned-ips.pardon.error"), [
-        [400, $("players.banned-ips.pardon.error.400")],
-        [401, $("common.error.401")]
-      ]);
-    }
+  const handlePardonIp = async (ip: string) => {
+    await pardonIp(ip);
+    emitter.emit("refresh-data");
   };
 
   useEffect(() => {
@@ -121,7 +102,7 @@ export function BannedIpsDialog({
                         size="icon"
                         className="float-right h-4 cursor-pointer hover:!bg-transparent"
                         title={$("players.banned-ips.pardon")}
-                        onClick={() => pardonIp(ip)}>
+                        onClick={() => handlePardonIp(ip)}>
                         <ShieldOff className="stroke-green-600"/>
                       </Button>
                     </TableCell>
@@ -136,13 +117,13 @@ export function BannedIpsDialog({
               placeholder={$("players.banned-ips.input.placeholder")}
               className="h-8 rounded-sm"
               onInput={(e) => setInputtedIp((e.target as HTMLInputElement).value)}
-              onKeyDown={(e) => (e.key === "Enter" && inputtedIp.length > 0) && banIp(inputtedIp)}/>
+              onKeyDown={(e) => (e.key === "Enter" && inputtedIp.length > 0) && handleBanIp(inputtedIp)}/>
             <Button
               variant="ghost"
               size="icon-sm"
               className="cursor-pointer"
               disabled={inputtedIp.length === 0}
-              onClick={() => banIp(inputtedIp)}>
+              onClick={() => handleBanIp(inputtedIp)}>
               <Plus />
             </Button>
           </div>
