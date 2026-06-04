@@ -86,7 +86,6 @@ export function PlayerSheet({
   };
 
   const handleBanIp = async () => {
-    console.log(player);
     if(player.isBanned || !player.ip) return;
 
     await banIp(player.ip);
