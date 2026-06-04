@@ -33,6 +33,7 @@ import { Prompt } from "@/components/prompt";
 import {
   addToWhitelist,
   ban,
+  banIp,
   depriveOp,
   giveOp,
   kick,
@@ -43,6 +44,7 @@ import {
 import { emitter } from "@/lib/emitter";
 import { millisToTime } from "@/lib/time";
 import { $ } from "@/lib/i18n";
+import { Alert } from "@/components/alert";
 
 const formSchema = z.object({
   gamemode: z.enum(Object.values(GameMode) as [string, ...string[]]),
@@ -79,6 +81,14 @@ export function PlayerSheet({
       : await giveOp(player.uuid, false);
     }
     emitter.emit("refresh-data");
+  };
+
+  const handleBanIp = async () => {
+    console.log(player);
+    if(player.isBanned || !player.ip) return;
+
+    await banIp(player.ip);
+    await kick(player.uuid, undefined, false);
   };
 
   useEffect(() => {
@@ -131,7 +141,18 @@ export function PlayerSheet({
                   {player.ip && (
                     <FormItem className="flex justify-between">
                       <FormLabel>{$("players.edit.form.ip")}</FormLabel>
-                      <span className="text-sm">{player.ip}</span>
+                      <span className="text-sm">
+                        <Alert
+                          title={$("players.edit.form.ip.alert.title", player.ip)}
+                          description={$("players.edit.form.ip.alert.description")}
+                          onAction={() => handleBanIp()}
+                          asChild>
+                          <button className="cursor-pointer mr-1.5 text-destructive">
+                            <Ban size={12}/>
+                          </button>
+                        </Alert>
+                        {player.ip}
+                      </span>
                     </FormItem>
                   )}
                   <FormItem className="flex justify-between">
